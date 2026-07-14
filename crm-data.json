@@ -1,0 +1,184 @@
+{
+  "customers": [
+    {
+      "id": "cust_001",
+      "name": "Guerilla Steel Stables",
+      "owner": "Morgan Peters",
+      "contact": "morgan@guerillasteelstables.com.au",
+      "phone": "",
+      "location": "Yatala, QLD",
+      "website": "guerillasteelstables.com.au",
+      "business_type": "Steel fabrication & ecommerce"
+    },
+    {
+      "id": "cust_002",
+      "name": "Paal Grant Designs In Landscape",
+      "owner": "Paal Grant",
+      "contact": "info@paalgrant.com",
+      "phone": "",
+      "location": "Ballarat, VIC",
+      "website": "paalgrant.com",
+      "business_type": "Landscape design & construction"
+    },
+    {
+      "id": "cust_003",
+      "name": "Coastal Native Supply",
+      "owner": "TBD",
+      "contact": "TBD",
+      "phone": "",
+      "location": "TBD",
+      "website": "coastalnativesupply.com.au",
+      "business_type": "Nursery / plant supply"
+    },
+    {
+      "id": "cust_004",
+      "name": "100up Solar",
+      "owner": "Fred",
+      "contact": "TBD",
+      "phone": "",
+      "location": "TBD",
+      "website": "100up.com.au",
+      "business_type": "Solar products & installation"
+    },
+    {
+      "id": "cust_005",
+      "name": "One Team Counselling & Coaching",
+      "owner": "TBD",
+      "contact": "TBD",
+      "phone": "",
+      "location": "QLD",
+      "website": "oneteamqld.com.au",
+      "business_type": "Counselling & coaching services"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj_001",
+      "customer_id": "cust_001",
+      "name": "Guerilla Steel SEO & Authority",
+      "description": "GSC/GA4 audit, ALTC cluster foundation, off-site link-building strategy",
+      "stage": "Build",
+      "assigned_to": "Vanessa Wood",
+      "created_date": "2026-04-01",
+      "deadline": "2026-09-30",
+      "completed_date": null,
+      "notes": "Near-zero DA — focusing on off-site authority. SCOS deployment in progress."
+    },
+    {
+      "id": "proj_002",
+      "customer_id": "cust_002",
+      "name": "Paal Grant Website Launch & SCOS",
+      "description": "WordPress/Breakdance build, product taxonomy, SCOS implementation",
+      "stage": "Review",
+      "assigned_to": "Vanessa Wood",
+      "created_date": "2026-01-15",
+      "deadline": "2026-05-04",
+      "completed_date": "2026-05-04",
+      "notes": "Live as of 2026-05-04. Post-launch content optimisation phase."
+    },
+    {
+      "id": "proj_003",
+      "customer_id": "cust_002",
+      "name": "Paal Grant Meta Title & CTA Audit",
+      "description": "GSC low-CTR analysis, service page optimisation",
+      "stage": "Refine",
+      "assigned_to": "Vanessa Wood",
+      "created_date": "2026-05-15",
+      "deadline": "2026-08-15",
+      "completed_date": null,
+      "notes": "Active GA4 conversion audit. Comparing page performance vs booking pathway."
+    },
+    {
+      "id": "proj_004",
+      "customer_id": "cust_003",
+      "name": "Coastal Native Supply Rebrand & Rebuild",
+      "description": "Horseshoe Bend Nursery → Coastal Native Supply rebrand, staging → live deployment",
+      "stage": "Onboard & Design",
+      "assigned_to": "Vanessa Wood",
+      "created_date": "2026-03-01",
+      "deadline": "2026-12-31",
+      "completed_date": null,
+      "notes": "Multi-phase: staging at hsb.bweb1.com.au, deploy to live, cutover to new domain."
+    },
+    {
+      "id": "proj_005",
+      "customer_id": "cust_004",
+      "name": "100up Content Baseline & ALTC Strategy",
+      "description": "Content inventory, traffic analysis, ALTC cluster mapping, baseline report",
+      "stage": "Build",
+      "assigned_to": "Vanessa Wood",
+      "created_date": "2026-02-01",
+      "deadline": "2026-07-31",
+      "completed_date": null,
+      "notes": "Solar products hierarchy active. Multiple content enrichment tasks in flight."
+    },
+    {
+      "id": "proj_006",
+      "customer_id": "cust_005",
+      "name": "One Team SEO & Content Strategy",
+      "description": "GSC/GA4 setup, ALTC content strategy, service page optimisation",
+      "stage": "Proposal",
+      "assigned_to": "Vanessa Wood",
+      "created_date": "2026-06-01",
+      "deadline": "2026-09-30",
+      "completed_date": null,
+      "notes": "Engagement proposal stage. GSC & GA4 configured."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task_001",
+      "project_id": "proj_001",
+      "title": "GSC Ranking Analysis",
+      "description": "Audit positions 11-30, identify link-building gaps",
+      "assigned_to": "Vanessa Wood",
+      "status": "in_progress",
+      "due_date": "2026-07-31"
+    },
+    {
+      "id": "task_002",
+      "project_id": "proj_002",
+      "title": "GA4 Conversion Audit",
+      "description": "Compare service page performance vs CTA click-through",
+      "assigned_to": "Vanessa Wood",
+      "status": "in_progress",
+      "due_date": "2026-08-15"
+    },
+    {
+      "id": "task_003",
+      "project_id": "proj_003",
+      "title": "Meta Title Rewrite (High-Intent Pages)",
+      "description": "Rewrite 12 service pages with improved CTR targeting",
+      "assigned_to": "Vanessa Wood",
+      "status": "in_progress",
+      "due_date": "2026-08-15"
+    },
+    {
+      "id": "task_004",
+      "project_id": "proj_004",
+      "title": "Brand Voice & ICP Definition",
+      "description": "Define brand voice, target audience, positioning for rebrand",
+      "assigned_to": "Vanessa Wood",
+      "status": "blocked",
+      "due_date": "2026-09-30"
+    },
+    {
+      "id": "task_005",
+      "project_id": "proj_005",
+      "title": "Featured Image Audit & Swap",
+      "description": "Optimise featured images across product pages",
+      "assigned_to": "Vanessa Wood",
+      "status": "in_progress",
+      "due_date": "2026-08-31"
+    },
+    {
+      "id": "task_006",
+      "project_id": "proj_005",
+      "title": "FAQ Content Generation",
+      "description": "Create FAQ cluster for off-grid system design queries",
+      "assigned_to": "Vanessa Wood",
+      "status": "todo",
+      "due_date": "2026-08-20"
+    }
+  ]
+}
