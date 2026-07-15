@@ -67,10 +67,185 @@
       background: #e8e8e8;
     }
 
+    .tabbar {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      gap: 4px;
+      padding: 0 24px;
+    }
+
+    .tab {
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    .tab:hover {
+      color: #1e1e1e;
+    }
+
+    .tab.active {
+      color: #E8610A;
+      border-bottom-color: #E8610A;
+    }
+
+    .tab-stub-pill {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #999;
+      background: #f0f0f0;
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+
+    .view {
+      height: calc(100vh - 96px);
+      overflow-y: auto;
+    }
+
     .container {
       display: grid;
       grid-template-columns: 250px 1fr;
-      height: calc(100vh - 56px);
+      height: 100%;
+    }
+
+    /* Projects timeline board */
+    .board-toolbar {
+      padding: 20px 24px 0;
+    }
+
+    .board-wrap {
+      margin: 16px 24px 24px;
+      overflow: auto;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      max-height: calc(100vh - 220px);
+    }
+
+    .board-grid {
+      display: grid;
+      grid-template-columns: 250px repeat(7, minmax(120px, 1fr));
+      min-width: 1130px;
+    }
+
+    .board-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #faf6f2;
+      border-bottom: 2px solid #f0d9c5;
+      padding: 10px 12px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: center;
+      color: #a35a1f;
+    }
+
+    .board-head.board-head-info {
+      position: sticky;
+      left: 0;
+      top: 0;
+      z-index: 3;
+      background: #f9f9f9;
+      text-align: left;
+      color: #888;
+    }
+
+    .board-cell {
+      border-bottom: 1px solid #f0f0f0;
+      border-left: 1px solid #f5f0ea;
+      min-height: 68px;
+      position: relative;
+      background: #fffdfb;
+    }
+
+    .board-info-cell {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: #fff;
+      border-right: 1px solid #e5e0da;
+      border-bottom: 1px solid #f0f0f0;
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+
+    .board-info-cell:hover {
+      background: #fdf9f6;
+    }
+
+    .board-project-name {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .board-project-customer {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .board-node {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 0 0 2px currentColor;
+    }
+
+    .node-tooltip {
+      display: none;
+      position: fixed;
+      background: #1e1e1e;
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1.4;
+      width: 190px;
+      z-index: 5000;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
+    .board-empty-row {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #999;
+      padding: 32px 20px;
+    }
+
+    .board-node.stage-proposal { background: #c41a1a; color: #c41a1a; }
+    .board-node.stage-onboard-design { background: #6b5b4f; color: #6b5b4f; }
+    .board-node.stage-build { background: #c45000; color: #c45000; }
+    .board-node.stage-review { background: #5a3fa8; color: #5a3fa8; }
+    .board-node.stage-refine { background: #1a6d3b; color: #1a6d3b; }
+    .board-node.stage-live { background: #1565c0; color: #1565c0; }
+    .board-node.stage-closed { background: #999; color: #999; }
+
+    .stub-view {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
     }
 
     .sidebar {
@@ -456,6 +631,16 @@
       .project-detail-grid {
         grid-template-columns: 1fr;
       }
+
+      .tabbar {
+        padding: 0 8px;
+        overflow-x: auto;
+      }
+
+      .tab {
+        padding: 12px 10px;
+        white-space: nowrap;
+      }
     }
   </style>
 </head>
@@ -469,52 +654,99 @@
   </div>
 </div>
 
-<div class="container">
-  <div class="sidebar">
-    <div class="sidebar-title">Customers</div>
-    <div id="customer-list"></div>
+<div class="tabbar">
+  <div class="tab active" id="tab-projects" onclick="switchTab('projects')">Projects</div>
+  <div class="tab" id="tab-customers" onclick="switchTab('customers')">Customers</div>
+  <div class="tab" id="tab-tasks" onclick="switchTab('tasks')">Tasks <span class="tab-stub-pill">Stub</span></div>
+  <div class="tab" id="tab-reports" onclick="switchTab('reports')">Reports <span class="tab-stub-pill">Stub</span></div>
+</div>
+
+<div id="view-projects" class="view">
+  <div class="view-title" style="padding: 20px 24px 0;">Projects</div>
+  <div class="view-sub" style="padding: 0 24px;">All active work across every customer, plotted by stage</div>
+
+  <div class="board-toolbar">
+    <div class="filters">
+      <button class="filter-btn active" onclick="filterBoard('all')">All</button>
+      <button class="filter-btn" onclick="filterBoard('Proposal')">Proposal</button>
+      <button class="filter-btn" onclick="filterBoard('Onboard & Design')">Onboard & Design</button>
+      <button class="filter-btn" onclick="filterBoard('Build')">Build</button>
+      <button class="filter-btn" onclick="filterBoard('Review')">Review</button>
+      <button class="filter-btn" onclick="filterBoard('Refine')">Refine</button>
+      <button class="filter-btn" onclick="filterBoard('Live')">Live</button>
+      <button class="filter-btn" onclick="filterBoard('Closed')">Closed</button>
+    </div>
   </div>
 
-  <div class="main">
-    <div id="customer-view" style="display: none;">
-      <div class="view-title" id="customer-name"></div>
-      <div class="view-sub" id="customer-info"></div>
-      <button class="btn btn-secondary" onclick="backToList()">← Back to all</button>
+  <div class="board-wrap">
+    <div class="board-grid" id="board-grid"></div>
+  </div>
+</div>
 
-      <div style="margin-top: 24px;">
-        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">Projects</h3>
-        <div class="filters">
-          <button class="filter-btn active" onclick="filterProjects('all')">All</button>
-          <button class="filter-btn" onclick="filterProjects('Proposal')">Proposal</button>
-          <button class="filter-btn" onclick="filterProjects('Onboard & Design')">Onboard & Design</button>
-          <button class="filter-btn" onclick="filterProjects('Build')">Build</button>
-          <button class="filter-btn" onclick="filterProjects('Review')">Review</button>
-          <button class="filter-btn" onclick="filterProjects('Refine')">Refine</button>
-          <button class="filter-btn" onclick="filterProjects('Live')">Live</button>
-          <button class="filter-btn" onclick="filterProjects('Closed')">Closed</button>
-        </div>
-        <table class="table" id="projects-table">
-          <thead>
-            <tr>
-              <th>Project</th>
-              <th>Stage</th>
-              <th>Deadline</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="projects-tbody"></tbody>
-        </table>
-      </div>
+<div id="view-customers" class="view" style="display: none;">
+  <div class="container">
+    <div class="sidebar">
+      <div class="sidebar-title">Customers</div>
+      <div id="customer-list"></div>
     </div>
 
-    <div id="default-view" style="display: flex; align-items: center; justify-content: center; height: 100%;">
-      <div class="empty-state">
-        <div class="empty-state-icon">📋</div>
-        <div>Select a customer to view projects</div>
+    <div class="main">
+      <div id="customer-view" style="display: none;">
+        <div class="view-title" id="customer-name"></div>
+        <div class="view-sub" id="customer-info"></div>
+        <button class="btn btn-secondary" onclick="backToList()">← Back to all</button>
+
+        <div style="margin-top: 24px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">Projects</h3>
+          <div class="filters">
+            <button class="filter-btn active" onclick="filterProjects('all')">All</button>
+            <button class="filter-btn" onclick="filterProjects('Proposal')">Proposal</button>
+            <button class="filter-btn" onclick="filterProjects('Onboard & Design')">Onboard & Design</button>
+            <button class="filter-btn" onclick="filterProjects('Build')">Build</button>
+            <button class="filter-btn" onclick="filterProjects('Review')">Review</button>
+            <button class="filter-btn" onclick="filterProjects('Refine')">Refine</button>
+            <button class="filter-btn" onclick="filterProjects('Live')">Live</button>
+            <button class="filter-btn" onclick="filterProjects('Closed')">Closed</button>
+          </div>
+          <table class="table" id="projects-table">
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Stage</th>
+                <th>Deadline</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="projects-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="default-view" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <div>Select a customer to view projects</div>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<div id="view-tasks" class="view stub-view" style="display: none;">
+  <div class="empty-state">
+    <div class="empty-state-icon">✅</div>
+    <div>Tasks view is coming soon</div>
+  </div>
+</div>
+
+<div id="view-reports" class="view stub-view" style="display: none;">
+  <div class="empty-state">
+    <div class="empty-state-icon">📊</div>
+    <div>Reports view is coming soon</div>
+  </div>
+</div>
+
+<div class="node-tooltip" id="node-tooltip"></div>
 
 <!-- Project Detail Modal -->
 <div class="modal" id="project-modal">
@@ -577,6 +809,54 @@
   let data = null;
   let currentCustomerId = null;
   let currentProjectFilter = 'all';
+  let currentBoardFilter = 'all';
+
+  const STAGES = ['Proposal', 'Onboard & Design', 'Build', 'Review', 'Refine', 'Live', 'Closed'];
+
+  function stageSlug(stage) {
+    return stage.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-');
+  }
+
+  function showNodeTooltip(nodeEl) {
+    const tooltip = document.getElementById('node-tooltip');
+    tooltip.innerHTML = `
+      <strong>${nodeEl.dataset.tooltipTitle}</strong><br>
+      ${nodeEl.dataset.tooltipStage}<br>
+      ${nodeEl.dataset.tooltipNote}
+    `;
+    tooltip.style.display = 'block';
+
+    const rect = nodeEl.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    let top = rect.top - tooltipRect.height - 8;
+    if (top < 4) top = rect.bottom + 8;
+    let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+    left = Math.max(4, Math.min(left, window.innerWidth - tooltipRect.width - 4));
+
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+  }
+
+  function hideNodeTooltip() {
+    document.getElementById('node-tooltip').style.display = 'none';
+  }
+
+  document.getElementById('board-grid').addEventListener('mouseover', e => {
+    const node = e.target.closest('.board-node');
+    if (node) showNodeTooltip(node);
+  });
+
+  document.getElementById('board-grid').addEventListener('mouseout', e => {
+    const node = e.target.closest('.board-node');
+    if (node) hideNodeTooltip();
+  });
+
+  function switchTab(tab) {
+    ['projects', 'customers', 'tasks', 'reports'].forEach(name => {
+      document.getElementById(`view-${name}`).style.display = name === tab ? 'block' : 'none';
+      document.getElementById(`tab-${name}`).classList.toggle('active', name === tab);
+    });
+  }
 
   // Supabase client initialization
   const SUPABASE_URL = 'https://uvgzchkejlrqrgiorvwf.supabase.co';
@@ -614,6 +894,7 @@
 
       data = { customers, projects, tasks };
       renderCustomerList();
+      renderProjectsBoard();
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Could not connect to Supabase. Check console for details.');
@@ -660,6 +941,62 @@
     });
   }
 
+  function filterBoard(stage) {
+    currentBoardFilter = stage;
+    document.querySelectorAll('#view-projects .filter-btn').forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    renderProjectsBoard();
+  }
+
+  function renderProjectsBoard() {
+    const grid = document.getElementById('board-grid');
+    if (!data) return;
+
+    const projects = currentBoardFilter === 'all'
+      ? data.projects
+      : data.projects.filter(p => p.stage === currentBoardFilter);
+
+    let html = '<div class="board-head board-head-info">Project</div>';
+    html += STAGES.map(stage => `<div class="board-head">${escHtml(stage)}</div>`).join('');
+
+    if (projects.length === 0) {
+      html += '<div class="board-empty-row">No projects match this filter</div>';
+      grid.innerHTML = html;
+      return;
+    }
+
+    projects.forEach(p => {
+      const customer = data.customers.find(c => c.id === p.customer_id);
+      const stageIdx = STAGES.indexOf(p.stage);
+
+      html += `
+        <div class="board-info-cell" onclick="openProjectModal('${p.id}')">
+          <div class="board-project-name">${escHtml(p.name)}</div>
+          <div class="board-project-customer">${escHtml(customer ? customer.name : 'Unknown customer')}</div>
+        </div>`;
+
+      STAGES.forEach((stage, idx) => {
+        if (idx !== stageIdx) {
+          html += '<div class="board-cell"></div>';
+          return;
+        }
+        const tooltipNote = p.notes ? escHtml(p.notes) : 'No notes yet.';
+        html += `
+          <div class="board-cell">
+            <div
+              class="board-node stage-${stageSlug(stage)}"
+              onclick="openProjectModal('${p.id}')"
+              data-tooltip-title="${escHtml(customer ? customer.name : '')}"
+              data-tooltip-stage="${escHtml(stage)}"
+              data-tooltip-note="${tooltipNote}"
+            ></div>
+          </div>`;
+      });
+    });
+
+    grid.innerHTML = html;
+  }
+
   function filterProjects(stage) {
     currentProjectFilter = stage;
     document.querySelectorAll('.filter-btn').forEach((btn, idx) => {
@@ -688,7 +1025,7 @@
       .map(p => `
         <tr class="clickable" onclick="openProjectModal('${p.id}')">
           <td><strong>${escHtml(p.name)}</strong><br><span style="font-size: 11px; color: #999;">${escHtml(p.description)}</span></td>
-          <td><span class="stage-badge stage-${p.stage.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}">${escHtml(p.stage)}</span></td>
+          <td><span class="stage-badge stage-${stageSlug(p.stage)}">${escHtml(p.stage)}</span></td>
           <td>${p.deadline ? formatDate(p.deadline) : '—'}</td>
           <td>${p.completed_date ? '<span style="color: #1a6d3b; font-weight: 600;">✓ Completed</span>' : '<span style="color: #c45000;">Active</span>'}</td>
         </tr>
@@ -731,9 +1068,8 @@
     document.getElementById('modal-tasks').innerHTML = tasksHtml;
 
     // Render stage controls
-    const stages = ['Proposal', 'Onboard & Design', 'Build', 'Review', 'Refine', 'Live', 'Closed'];
-    const currentStageIdx = stages.indexOf(project.stage);
-    const controlsHtml = stages
+    const currentStageIdx = STAGES.indexOf(project.stage);
+    const controlsHtml = STAGES
       .map((stage, idx) => `
         <button 
           class="btn ${idx === currentStageIdx ? 'btn-primary' : 'btn-secondary'}"
@@ -763,7 +1099,8 @@
       if (newStage === 'Closed' && !project.completed_date) {
         project.completed_date = new Date().toISOString().split('T')[0];
       }
-      renderProjectsForCustomer(currentCustomerId);
+      if (currentCustomerId) renderProjectsForCustomer(currentCustomerId);
+      renderProjectsBoard();
       closeProjectModal();
       toast(`${project.name} moved to ${newStage}`);
     }
