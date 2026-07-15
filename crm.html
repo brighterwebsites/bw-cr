@@ -550,7 +550,14 @@
       </div>
       <div class="detail-field full">
         <div class="detail-label">Notes</div>
-        <div class="detail-value" id="modal-notes"></div>
+        <div class="detail-value" id="modal-notes" style="cursor: pointer; min-height: 40px; padding: 8px; border-radius: 4px; background: #f9f9f9;" onclick="editNotes()"></div>
+        <div id="notes-edit" style="display: none; gap: 8px; margin-top: 8px;">
+          <textarea id="notes-input" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-family: inherit;" rows="3"></textarea>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" onclick="saveNotes()">Save</button>
+            <button class="btn btn-secondary" onclick="cancelEditNotes()">Cancel</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -690,6 +697,7 @@
   }
 
   function openProjectModal(projectId) {
+    currentProjectId = projectId;
     const project = data.projects.find(p => p.id === projectId);
     const customer = data.customers.find(c => c.id === project.customer_id);
     const tasks = data.tasks.filter(t => t.project_id === projectId);
@@ -746,6 +754,8 @@
     document.getElementById('project-modal').classList.remove('open');
   }
 
+  let currentProjectId = null;
+
   function moveProjectToStage(projectId, newStage) {
     const project = data.projects.find(p => p.id === projectId);
     if (project) {
@@ -756,6 +766,51 @@
       renderProjectsForCustomer(currentCustomerId);
       closeProjectModal();
       toast(`${project.name} moved to ${newStage}`);
+    }
+  }
+
+  function editNotes() {
+    const notes = document.getElementById('modal-notes').textContent;
+    document.getElementById('notes-input').value = notes === '(no notes)' ? '' : notes;
+    document.getElementById('modal-notes').style.display = 'none';
+    document.getElementById('notes-edit').style.display = 'flex';
+    document.getElementById('notes-input').focus();
+  }
+
+  function cancelEditNotes() {
+    document.getElementById('notes-edit').style.display = 'none';
+    document.getElementById('modal-notes').style.display = 'block';
+  }
+
+  async function saveNotes() {
+    const newNotes = document.getElementById('notes-input').value.trim();
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/projects?id=eq.${currentProjectId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ notes: newNotes || null }),
+        }
+      );
+      if (response.ok) {
+        const project = data.projects.find(p => p.id === currentProjectId);
+        if (project) {
+          project.notes = newNotes || null;
+        }
+        document.getElementById('modal-notes').textContent = newNotes || '(no notes)';
+        cancelEditNotes();
+        toast('Notes saved to Supabase ✓');
+      } else {
+        toast('Error saving notes');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      toast('Error saving notes');
     }
   }
 
