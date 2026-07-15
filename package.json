@@ -1,0 +1,6 @@
+{
+  "name": "bw-crm",
+  "scripts": {
+    "deploy": "echo 'Deploying to Cloudflare Pages'"
+  }
+}

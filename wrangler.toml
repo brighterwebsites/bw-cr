@@ -1,0 +1,9 @@
+name = "bw-cr"
+type = "javascript"
+main = "crm.html"
+compatibility_date = "2024-01-01"
+
+[env.production]
+routes = [
+  { pattern = "/*", zone_name = "brighter-websites.com.au" }
+]
