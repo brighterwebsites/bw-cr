@@ -571,15 +571,45 @@
   let currentCustomerId = null;
   let currentProjectFilter = 'all';
 
+  // Supabase client initialization
+  const SUPABASE_URL = 'https://uvgzchkejlrqrgiorvwf.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2Z3pjaGtlamxycXJnaW9ydndmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNDY5NDIsImV4cCI6MjA5OTYyMjk0Mn0.mnquPm_JaZeESKGEdrFC0GUD_mmXYCHh0iW5jveGfdI';
+
   // Load data on page load
   async function loadData() {
     try {
-      const response = await fetch('crm-data.json');
-      data = await response.json();
+      // Fetch customers
+      const customersRes = await fetch(`${SUPABASE_URL}/rest/v1/customers`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        }
+      });
+      const customers = await customersRes.json();
+
+      // Fetch projects
+      const projectsRes = await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        }
+      });
+      const projects = await projectsRes.json();
+
+      // Fetch tasks
+      const tasksRes = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        }
+      });
+      const tasks = await tasksRes.json();
+
+      data = { customers, projects, tasks };
       renderCustomerList();
     } catch (error) {
       console.error('Failed to load data:', error);
-      alert('Could not load crm-data.json — make sure it\'s in the same directory as this HTML file.');
+      alert('Could not connect to Supabase. Check console for details.');
     }
   }
 
