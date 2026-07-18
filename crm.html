@@ -907,7 +907,7 @@
   <div class="view-title" style="padding: 20px 24px 0;">Tasks</div>
   <div class="view-sub" style="padding: 0 24px;">Everything to do, across every project</div>
 
-  <div class="board-toolbar">
+  <div class="board-toolbar" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
     <div class="filters" id="task-filters">
       <button class="filter-btn active" onclick="filterTasksByStatus('all')">All</button>
       <button class="filter-btn" onclick="filterTasksByStatus('not_done')">Not Done</button>
@@ -916,6 +916,7 @@
       <button class="filter-btn" onclick="filterTasksByStatus('blocked')">Blocked</button>
       <button class="filter-btn" onclick="filterTasksByStatus('done')">Done</button>
     </div>
+    <button class="btn btn-primary" onclick="openNewTaskModal()">+ New Task</button>
   </div>
 
   <div style="margin: 16px 24px 24px; overflow-x: auto;">
@@ -1010,13 +1011,16 @@
   <div class="modal-content" style="max-width: 520px;">
     <div class="modal-header">
       <div>
-        <h2>Edit Task</h2>
-        <p style="font-size: 12px; color: #888; margin-top: 4px;" id="task-modal-project-name"></p>
+        <h2 id="task-modal-heading">Edit Task</h2>
       </div>
       <button class="modal-close" onclick="closeTaskModal()">✕</button>
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="login-field">
+        <label for="task-edit-project">Project</label>
+        <select id="task-edit-project"></select>
+      </div>
       <div class="login-field">
         <label for="task-edit-title">Title</label>
         <input type="text" id="task-edit-title">
@@ -1430,13 +1434,24 @@
     toast('Task status updated');
   }
 
+  function populateTaskProjectSelect(selectedProjectId) {
+    const select = document.getElementById('task-edit-project');
+    select.innerHTML = data.projects
+      .map(p => {
+        const customer = data.customers.find(c => c.id === p.customer_id);
+        const label = customer ? `${p.name} — ${customer.name}` : p.name;
+        return `<option value="${p.id}" ${p.id === selectedProjectId ? 'selected' : ''}>${escHtml(label)}</option>`;
+      })
+      .join('');
+  }
+
   function openTaskModal(taskId) {
     currentTaskId = taskId;
     const task = data.tasks.find(t => t.id === taskId);
     if (!task) return;
-    const project = data.projects.find(p => p.id === task.project_id);
 
-    document.getElementById('task-modal-project-name').textContent = project ? project.name : '';
+    document.getElementById('task-modal-heading').textContent = 'Edit Task';
+    populateTaskProjectSelect(task.project_id);
     document.getElementById('task-edit-title').value = task.title || '';
     document.getElementById('task-edit-description').value = task.description || '';
     document.getElementById('task-edit-status').value = task.status || 'todo';
@@ -1447,15 +1462,47 @@
     document.getElementById('task-modal').classList.add('open');
   }
 
+  function openNewTaskModal() {
+    if (!data || data.projects.length === 0) {
+      toast('Create a project first before adding tasks');
+      return;
+    }
+
+    currentTaskId = null;
+
+    document.getElementById('task-modal-heading').textContent = 'New Task';
+    populateTaskProjectSelect(null);
+    document.getElementById('task-edit-title').value = '';
+    document.getElementById('task-edit-description').value = '';
+    document.getElementById('task-edit-status').value = 'todo';
+    document.getElementById('task-edit-type').value = 'task';
+    document.getElementById('task-edit-due-date').value = '';
+    document.getElementById('task-edit-assigned').value = '';
+
+    document.getElementById('task-modal').classList.add('open');
+  }
+
   function closeTaskModal() {
     document.getElementById('task-modal').classList.remove('open');
     currentTaskId = null;
   }
 
   async function saveTaskEdit() {
-    if (!currentTaskId) return;
-    const updates = {
-      title: document.getElementById('task-edit-title').value.trim(),
+    const projectId = document.getElementById('task-edit-project').value;
+    const title = document.getElementById('task-edit-title').value.trim();
+
+    if (!projectId) {
+      toast('Select a project');
+      return;
+    }
+    if (!title) {
+      toast('Enter a task title');
+      return;
+    }
+
+    const fields = {
+      project_id: projectId,
+      title,
       description: document.getElementById('task-edit-description').value.trim() || null,
       status: document.getElementById('task-edit-status').value,
       task_type: document.getElementById('task-edit-type').value,
@@ -1463,19 +1510,30 @@
       assigned_to: document.getElementById('task-edit-assigned').value.trim() || null,
     };
 
-    const { error } = await supabaseClient.from('tasks').update(updates).eq('id', currentTaskId);
-    if (error) {
-      console.error('Task save error:', error);
-      toast('Error saving task');
-      return;
+    if (currentTaskId) {
+      const { error } = await supabaseClient.from('tasks').update(fields).eq('id', currentTaskId);
+      if (error) {
+        console.error('Task save error:', error);
+        toast('Error saving task');
+        return;
+      }
+      const task = data.tasks.find(t => t.id === currentTaskId);
+      if (task) Object.assign(task, fields);
+      toast('Task saved');
+    } else {
+      const newTask = { id: `task_${crypto.randomUUID()}`, ...fields };
+      const { error } = await supabaseClient.from('tasks').insert(newTask);
+      if (error) {
+        console.error('Task create error:', error);
+        toast('Error creating task');
+        return;
+      }
+      data.tasks.push(newTask);
+      toast('Task created');
     }
-
-    const task = data.tasks.find(t => t.id === currentTaskId);
-    if (task) Object.assign(task, updates);
 
     closeTaskModal();
     renderTasksTab();
-    toast('Task saved');
   }
 
   function selectCustomer(customerId) {
