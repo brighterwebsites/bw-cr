@@ -18,11 +18,24 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can read own profile" ON profiles
   FOR SELECT USING (id = auth.uid());
 
+-- Helper function to check "is this user an admin?" without triggering RLS on
+-- profiles again (a policy on `profiles` that queries `profiles` directly would
+-- recurse into itself — SECURITY DEFINER runs as the function owner, which
+-- bypasses RLS for this internal lookup only).
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
+
 -- Admins can read every profile (for future user management)
 CREATE POLICY "Admins can read all profiles" ON profiles
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
-  );
+  FOR SELECT USING (is_admin());
 
 -- 2. Link projects to a real login, for designer scoping
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS assigned_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
@@ -34,21 +47,21 @@ DROP POLICY IF EXISTS "Allow public read on tasks" ON tasks;
 
 -- 4. Admins: full access to everything
 CREATE POLICY "Admins full access customers" ON customers FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  is_admin()
 ) WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  is_admin()
 );
 
 CREATE POLICY "Admins full access projects" ON projects FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  is_admin()
 ) WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  is_admin()
 );
 
 CREATE POLICY "Admins full access tasks" ON tasks FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  is_admin()
 ) WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  is_admin()
 );
 
 -- 5. Designers: read/update only their own assigned projects (and related tasks/customers)
