@@ -288,7 +288,8 @@
       margin-bottom: 4px;
     }
 
-    .login-field input {
+    .login-field input,
+    .login-field select {
       width: 100%;
       padding: 8px;
       border: 1px solid #ddd;
@@ -503,6 +504,78 @@
     .status-done {
       background: #e8f5ed;
       color: #1a6d3b;
+    }
+
+    .table th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .table th.sortable:hover {
+      color: #1e1e1e;
+    }
+
+    .sort-arrow {
+      margin-left: 4px;
+      font-size: 9px;
+    }
+
+    .task-status-select {
+      padding: 3px 8px;
+      border-radius: 3px;
+      border: none;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .task-status-select.status-todo {
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .task-status-select.status-in_progress {
+      background: #fdf1e8;
+      color: #c45000;
+    }
+
+    .task-status-select.status-blocked {
+      background: #fce4e4;
+      color: #c41a1a;
+    }
+
+    .task-status-select.status-done {
+      background: #e8f5ed;
+      color: #1a6d3b;
+    }
+
+    .task-type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 2px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .task-type-badge.task-type-task {
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .task-type-badge.task-type-deliverable {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .task-type-badge.task-type-goal {
+      background: #e8f5ed;
+      color: #1a6d3b;
+    }
+
+    .task-type-badge.task-type-internal_task {
+      background: #2a2a2a;
+      color: #fff;
     }
 
     .modal {
@@ -755,7 +828,7 @@
 <div class="tabbar">
   <div class="tab active" id="tab-projects" onclick="switchTab('projects')">Projects</div>
   <div class="tab" id="tab-customers" onclick="switchTab('customers')">Customers</div>
-  <div class="tab" id="tab-tasks" onclick="switchTab('tasks')">Tasks <span class="tab-stub-pill">Stub</span></div>
+  <div class="tab" id="tab-tasks" onclick="switchTab('tasks')">Tasks</div>
   <div class="tab" id="tab-reports" onclick="switchTab('reports')">Reports <span class="tab-stub-pill">Stub</span></div>
 </div>
 
@@ -830,10 +903,37 @@
   </div>
 </div>
 
-<div id="view-tasks" class="view stub-view" style="display: none;">
-  <div class="empty-state">
-    <div class="empty-state-icon">✅</div>
-    <div>Tasks view is coming soon</div>
+<div id="view-tasks" class="view" style="display: none;">
+  <div class="view-title" style="padding: 20px 24px 0;">Tasks</div>
+  <div class="view-sub" style="padding: 0 24px;">Everything to do, across every project</div>
+
+  <div class="board-toolbar">
+    <div class="filters" id="task-filters">
+      <button class="filter-btn active" onclick="filterTasksByStatus('all')">All</button>
+      <button class="filter-btn" onclick="filterTasksByStatus('not_done')">Not Done</button>
+      <button class="filter-btn" onclick="filterTasksByStatus('todo')">To Do</button>
+      <button class="filter-btn" onclick="filterTasksByStatus('in_progress')">In Progress</button>
+      <button class="filter-btn" onclick="filterTasksByStatus('blocked')">Blocked</button>
+      <button class="filter-btn" onclick="filterTasksByStatus('done')">Done</button>
+    </div>
+  </div>
+
+  <div style="margin: 16px 24px 24px; overflow-x: auto;">
+    <table class="table" id="tasks-table">
+      <thead>
+        <tr>
+          <th class="sortable" onclick="sortTasksBy('project')">Project<span class="sort-arrow" data-col="project"></span></th>
+          <th class="sortable" onclick="sortTasksBy('stage')">Stage<span class="sort-arrow" data-col="stage"></span></th>
+          <th class="sortable" onclick="sortTasksBy('task')">Task<span class="sort-arrow" data-col="task"></span></th>
+          <th class="sortable" onclick="sortTasksBy('status')">Status<span class="sort-arrow" data-col="status"></span></th>
+          <th class="sortable" onclick="sortTasksBy('type')">Type<span class="sort-arrow" data-col="type"></span></th>
+          <th>Details</th>
+          <th class="sortable" onclick="sortTasksBy('date')">Date<span class="sort-arrow" data-col="date"></span></th>
+          <th>Assigned</th>
+        </tr>
+      </thead>
+      <tbody id="tasks-tbody"></tbody>
+    </table>
   </div>
 </div>
 
@@ -905,6 +1005,63 @@
   </div>
 </div>
 
+<!-- Task Edit Modal -->
+<div class="modal" id="task-modal">
+  <div class="modal-content" style="max-width: 520px;">
+    <div class="modal-header">
+      <div>
+        <h2>Edit Task</h2>
+        <p style="font-size: 12px; color: #888; margin-top: 4px;" id="task-modal-project-name"></p>
+      </div>
+      <button class="modal-close" onclick="closeTaskModal()">✕</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="login-field">
+        <label for="task-edit-title">Title</label>
+        <input type="text" id="task-edit-title">
+      </div>
+      <div class="login-field">
+        <label for="task-edit-description">Details</label>
+        <textarea id="task-edit-description" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-family: inherit;"></textarea>
+      </div>
+      <div class="project-detail-grid" style="margin-bottom: 0;">
+        <div class="login-field">
+          <label for="task-edit-status">Status</label>
+          <select id="task-edit-status">
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="blocked">Blocked</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+        <div class="login-field">
+          <label for="task-edit-type">Task Type</label>
+          <select id="task-edit-type">
+            <option value="task">Task</option>
+            <option value="deliverable">Deliverable</option>
+            <option value="goal">Goal</option>
+            <option value="internal_task">Internal Task</option>
+          </select>
+        </div>
+        <div class="login-field">
+          <label for="task-edit-due-date">Due Date</label>
+          <input type="date" id="task-edit-due-date">
+        </div>
+        <div class="login-field">
+          <label for="task-edit-assigned">Assigned To</label>
+          <input type="text" id="task-edit-assigned">
+        </div>
+      </div>
+    </div>
+
+    <div class="project-actions">
+      <button class="btn btn-primary" onclick="saveTaskEdit()">Save</button>
+      <button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   let data = null;
@@ -915,6 +1072,16 @@
   let currentProfile = null;
 
   const STAGES = ['Proposal', 'Onboard & Design', 'Build', 'Review', 'Refine', 'Live', 'Closed'];
+
+  const TASK_STATUSES = ['todo', 'in_progress', 'blocked', 'done'];
+  const TASK_STATUS_LABELS = { todo: 'To Do', in_progress: 'In Progress', blocked: 'Blocked', done: 'Done' };
+  const TASK_TYPES = ['task', 'deliverable', 'goal', 'internal_task'];
+  const TASK_TYPE_LABELS = { task: 'Task', deliverable: 'Deliverable', goal: 'Goal', internal_task: 'Internal Task' };
+
+  let currentTaskStatusFilter = 'all';
+  let taskSortColumn = 'date';
+  let taskSortDir = 'asc';
+  let currentTaskId = null;
 
   function stageSlug(stage) {
     return stage.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-');
@@ -1079,6 +1246,7 @@
       data = { customers: customersRes.data, projects: projectsRes.data, tasks: tasksRes.data };
       renderCustomerList();
       renderProjectsBoard();
+      renderTasksTab();
     } catch (error) {
       console.error('Failed to load data:', error);
       toast('Could not load data. Check console for details.');
@@ -1158,6 +1326,156 @@
         </div>
       `)
       .join('');
+  }
+
+  // ---- Tasks tab ----
+
+  function filterTasksByStatus(status) {
+    currentTaskStatusFilter = status;
+    document.querySelectorAll('#task-filters .filter-btn').forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    renderTasksTab();
+  }
+
+  function sortTasksBy(column) {
+    if (taskSortColumn === column) {
+      taskSortDir = taskSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      taskSortColumn = column;
+      taskSortDir = 'asc';
+    }
+    renderTasksTab();
+  }
+
+  function taskSortValue(row, column) {
+    switch (column) {
+      case 'project': return row.projectName.toLowerCase();
+      case 'stage': return (row.project ? row.project.stage : '').toLowerCase();
+      case 'task': return row.task.title.toLowerCase();
+      case 'status': return row.task.status || '';
+      case 'type': return row.task.task_type || 'task';
+      case 'date': return row.task.due_date || '9999-99-99';
+      default: return '';
+    }
+  }
+
+  function renderTasksTab() {
+    const tbody = document.getElementById('tasks-tbody');
+    if (!data) return;
+
+    let rows = data.tasks.map(t => {
+      const project = data.projects.find(p => p.id === t.project_id);
+      return { task: t, project, projectName: project ? project.name : 'Unknown project' };
+    });
+
+    if (currentTaskStatusFilter === 'not_done') {
+      rows = rows.filter(r => r.task.status !== 'done');
+    } else if (currentTaskStatusFilter !== 'all') {
+      rows = rows.filter(r => r.task.status === currentTaskStatusFilter);
+    }
+
+    rows.sort((a, b) => {
+      const va = taskSortValue(a, taskSortColumn);
+      const vb = taskSortValue(b, taskSortColumn);
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return taskSortDir === 'asc' ? cmp : -cmp;
+    });
+
+    document.querySelectorAll('#tasks-table .sort-arrow').forEach(el => {
+      el.textContent = el.dataset.col === taskSortColumn ? (taskSortDir === 'asc' ? '▲' : '▼') : '';
+    });
+
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #999; padding: 24px;">No tasks match this filter</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const t = r.task;
+      const taskType = t.task_type || 'task';
+      return `
+        <tr class="clickable" onclick="openTaskModal('${t.id}')">
+          <td><strong>${escHtml(r.projectName)}</strong></td>
+          <td>${r.project ? `<span class="stage-badge stage-${stageSlug(r.project.stage)}">${escHtml(r.project.stage)}</span>` : '—'}</td>
+          <td>${escHtml(t.title)}</td>
+          <td>
+            <select class="task-status-select status-${t.status}" onclick="event.stopPropagation()" onchange="updateTaskStatusInline('${t.id}', this.value)">
+              ${TASK_STATUSES.map(s => `<option value="${s}" ${s === t.status ? 'selected' : ''}>${TASK_STATUS_LABELS[s]}</option>`).join('')}
+            </select>
+          </td>
+          <td><span class="task-type-badge task-type-${taskType}">${escHtml(TASK_TYPE_LABELS[taskType])}</span></td>
+          <td style="max-width: 260px;">${escHtml(t.description || '—')}</td>
+          <td>${t.due_date ? '📅 ' + formatDate(t.due_date) : '—'}</td>
+          <td>${t.assigned_to ? '👤 ' + escHtml(t.assigned_to) : '—'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function updateTaskStatusInline(taskId, newStatus) {
+    const task = data.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const previousStatus = task.status;
+    task.status = newStatus;
+
+    const { error } = await supabaseClient.from('tasks').update({ status: newStatus }).eq('id', taskId);
+    if (error) {
+      task.status = previousStatus;
+      console.error('Task status update error:', error);
+      toast('Error updating task status');
+      renderTasksTab();
+      return;
+    }
+    renderTasksTab();
+    toast('Task status updated');
+  }
+
+  function openTaskModal(taskId) {
+    currentTaskId = taskId;
+    const task = data.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const project = data.projects.find(p => p.id === task.project_id);
+
+    document.getElementById('task-modal-project-name').textContent = project ? project.name : '';
+    document.getElementById('task-edit-title').value = task.title || '';
+    document.getElementById('task-edit-description').value = task.description || '';
+    document.getElementById('task-edit-status').value = task.status || 'todo';
+    document.getElementById('task-edit-type').value = task.task_type || 'task';
+    document.getElementById('task-edit-due-date').value = task.due_date || '';
+    document.getElementById('task-edit-assigned').value = task.assigned_to || '';
+
+    document.getElementById('task-modal').classList.add('open');
+  }
+
+  function closeTaskModal() {
+    document.getElementById('task-modal').classList.remove('open');
+    currentTaskId = null;
+  }
+
+  async function saveTaskEdit() {
+    if (!currentTaskId) return;
+    const updates = {
+      title: document.getElementById('task-edit-title').value.trim(),
+      description: document.getElementById('task-edit-description').value.trim() || null,
+      status: document.getElementById('task-edit-status').value,
+      task_type: document.getElementById('task-edit-type').value,
+      due_date: document.getElementById('task-edit-due-date').value || null,
+      assigned_to: document.getElementById('task-edit-assigned').value.trim() || null,
+    };
+
+    const { error } = await supabaseClient.from('tasks').update(updates).eq('id', currentTaskId);
+    if (error) {
+      console.error('Task save error:', error);
+      toast('Error saving task');
+      return;
+    }
+
+    const task = data.tasks.find(t => t.id === currentTaskId);
+    if (task) Object.assign(task, updates);
+
+    closeTaskModal();
+    renderTasksTab();
+    toast('Task saved');
   }
 
   function selectCustomer(customerId) {
