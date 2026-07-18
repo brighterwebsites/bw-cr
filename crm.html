@@ -248,6 +248,68 @@
       height: 100%;
     }
 
+    .login-screen {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f5f5f5;
+    }
+
+    .login-card {
+      width: 320px;
+      background: #fff;
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .login-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .login-card .view-sub {
+      margin-bottom: 20px;
+    }
+
+    .login-field {
+      margin-bottom: 12px;
+    }
+
+    .login-field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .login-field input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .login-error {
+      display: none;
+      color: #c41a1a;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .header-user-email {
+      font-size: 12px;
+      color: #ccc;
+      margin-right: 4px;
+    }
+
     .sidebar {
       background: #fff;
       border-right: 1px solid #e0e0e0;
@@ -646,11 +708,47 @@
 </head>
 <body>
 
+<div class="login-screen" id="view-login">
+  <div class="login-card">
+    <h2>BW Project CRM</h2>
+    <div class="view-sub">Sign in to continue</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-field">
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label for="login-password">Password</label>
+      <input type="password" id="login-password" autocomplete="current-password" onkeydown="if (event.key === 'Enter') handleLogin();">
+    </div>
+    <button class="btn btn-primary" style="width: 100%; padding: 10px;" onclick="handleLogin()">Sign in</button>
+  </div>
+</div>
+
+<div id="view-customer-portal" style="display: none; height: 100vh; overflow-y: auto;">
+  <div class="header">
+    <h1>BW Project CRM</h1>
+    <div class="header-right">
+      <span class="header-user-email" id="portal-user-email"></span>
+      <button class="btn btn-secondary" onclick="handleLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="view-title" style="padding: 20px 24px 0;">Your Projects</div>
+  <div class="view-sub" style="padding: 0 24px;">Track progress on your project(s)</div>
+  <div class="board-wrap" style="margin: 16px 24px 24px;">
+    <div class="board-grid" id="portal-board-grid"></div>
+  </div>
+</div>
+
+<div id="app-shell" style="display: none;">
+
 <div class="header">
   <h1>BW Project CRM</h1>
   <div class="header-right">
+    <span class="header-user-email" id="current-user-email"></span>
     <button class="btn btn-secondary" onclick="exportData()">↓ Export</button>
     <button class="btn btn-secondary" onclick="importData()">↑ Import</button>
+    <button class="btn btn-secondary" onclick="handleLogout()">Sign out</button>
   </div>
 </div>
 
@@ -746,6 +844,8 @@
   </div>
 </div>
 
+</div> <!-- /app-shell -->
+
 <div class="node-tooltip" id="node-tooltip"></div>
 
 <!-- Project Detail Modal -->
@@ -805,11 +905,14 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   let data = null;
   let currentCustomerId = null;
   let currentProjectFilter = 'all';
   let currentBoardFilter = 'all';
+  let currentUser = null;
+  let currentProfile = null;
 
   const STAGES = ['Proposal', 'Onboard & Design', 'Build', 'Review', 'Refine', 'Live', 'Closed'];
 
@@ -851,6 +954,16 @@
     if (node) hideNodeTooltip();
   });
 
+  document.getElementById('portal-board-grid').addEventListener('mouseover', e => {
+    const node = e.target.closest('.board-node');
+    if (node) showNodeTooltip(node);
+  });
+
+  document.getElementById('portal-board-grid').addEventListener('mouseout', e => {
+    const node = e.target.closest('.board-node');
+    if (node) hideNodeTooltip();
+  });
+
   function switchTab(tab) {
     ['projects', 'customers', 'tasks', 'reports'].forEach(name => {
       document.getElementById(`view-${name}`).style.display = name === tab ? 'block' : 'none';
@@ -861,44 +974,178 @@
   // Supabase client initialization
   const SUPABASE_URL = 'https://uvgzchkejlrqrgiorvwf.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2Z3pjaGtlamxycXJnaW9ydndmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNDY5NDIsImV4cCI6MjA5OTYyMjk0Mn0.mnquPm_JaZeESKGEdrFC0GUD_mmXYCHh0iW5jveGfdI';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Load data on page load
+  // ---- Auth ----
+
+  async function initAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      await handleAuthenticated(session);
+    } else {
+      showLogin();
+    }
+
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        handleAuthenticated(session);
+      } else if (event === 'SIGNED_OUT') {
+        showLogin();
+      }
+    });
+  }
+
+  function showLogin(errorMessage) {
+    document.getElementById('view-login').style.display = 'flex';
+    document.getElementById('app-shell').style.display = 'none';
+    document.getElementById('view-customer-portal').style.display = 'none';
+    const errorEl = document.getElementById('login-error');
+    if (errorMessage) {
+      errorEl.textContent = errorMessage;
+      errorEl.style.display = 'block';
+    } else {
+      errorEl.style.display = 'none';
+    }
+  }
+
+  async function handleAuthenticated(session) {
+    currentUser = session.user;
+
+    const { data: profile, error } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (error || !profile) {
+      await supabaseClient.auth.signOut();
+      showLogin('Your account has no role assigned yet. Contact an admin.');
+      return;
+    }
+
+    currentProfile = profile;
+
+    if (profile.role === 'customer') {
+      document.getElementById('view-login').style.display = 'none';
+      document.getElementById('app-shell').style.display = 'none';
+      document.getElementById('view-customer-portal').style.display = 'block';
+      document.getElementById('portal-user-email').textContent = currentUser.email;
+      await loadCustomerPortalData();
+    } else {
+      document.getElementById('view-login').style.display = 'none';
+      document.getElementById('view-customer-portal').style.display = 'none';
+      document.getElementById('app-shell').style.display = 'block';
+      document.getElementById('current-user-email').textContent = `${currentUser.email} (${profile.role})`;
+      switchTab('projects');
+      await loadData();
+    }
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!email || !password) {
+      showLogin('Enter your email and password.');
+      return;
+    }
+
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      showLogin(error.message);
+    }
+  }
+
+  async function handleLogout() {
+    await supabaseClient.auth.signOut();
+    data = null;
+    currentUser = null;
+    currentProfile = null;
+  }
+
+  // ---- Data loading (admin / designer) ----
+
   async function loadData() {
     try {
-      // Fetch customers
-      const customersRes = await fetch(`${SUPABASE_URL}/rest/v1/customers`, {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        }
-      });
-      const customers = await customersRes.json();
+      const [customersRes, projectsRes, tasksRes] = await Promise.all([
+        supabaseClient.from('customers').select('*'),
+        supabaseClient.from('projects').select('*'),
+        supabaseClient.from('tasks').select('*'),
+      ]);
+      if (customersRes.error) throw customersRes.error;
+      if (projectsRes.error) throw projectsRes.error;
+      if (tasksRes.error) throw tasksRes.error;
 
-      // Fetch projects
-      const projectsRes = await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        }
-      });
-      const projects = await projectsRes.json();
-
-      // Fetch tasks
-      const tasksRes = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        }
-      });
-      const tasks = await tasksRes.json();
-
-      data = { customers, projects, tasks };
+      data = { customers: customersRes.data, projects: projectsRes.data, tasks: tasksRes.data };
       renderCustomerList();
       renderProjectsBoard();
     } catch (error) {
       console.error('Failed to load data:', error);
-      alert('Could not connect to Supabase. Check console for details.');
+      toast('Could not load data. Check console for details.');
     }
+  }
+
+  // ---- Data loading (customer portal) ----
+
+  async function loadCustomerPortalData() {
+    try {
+      const [projectsRes, tasksRes] = await Promise.all([
+        supabaseClient.from('customer_project_view').select('*'),
+        supabaseClient.from('customer_task_view').select('*'),
+      ]);
+      if (projectsRes.error) throw projectsRes.error;
+      if (tasksRes.error) throw tasksRes.error;
+
+      renderCustomerPortalBoard(projectsRes.data || [], tasksRes.data || []);
+    } catch (error) {
+      console.error('Failed to load portal data:', error);
+      toast('Could not load your projects. Check console for details.');
+    }
+  }
+
+  function renderCustomerPortalBoard(projects, tasks) {
+    const grid = document.getElementById('portal-board-grid');
+
+    let html = '<div class="board-head board-head-info">Project</div>';
+    html += STAGES.map(stage => `<div class="board-head">${escHtml(stage)}</div>`).join('');
+
+    if (projects.length === 0) {
+      html += '<div class="board-empty-row">No projects yet</div>';
+      grid.innerHTML = html;
+      return;
+    }
+
+    projects.forEach(p => {
+      const stageIdx = STAGES.indexOf(p.stage);
+      const projectTasks = tasks.filter(t => t.project_id === p.id);
+      const taskTitles = projectTasks.length
+        ? projectTasks.map(t => `${escHtml(t.title)} (${escHtml(t.status)})`).join('<br>')
+        : 'No tasks yet.';
+
+      html += `
+        <div class="board-info-cell">
+          <div class="board-project-name">${escHtml(p.name)}</div>
+          <div class="board-project-customer">${p.deadline ? 'Due ' + formatDate(p.deadline) : 'No deadline set'}</div>
+        </div>`;
+
+      STAGES.forEach((stage, idx) => {
+        if (idx !== stageIdx) {
+          html += '<div class="board-cell"></div>';
+          return;
+        }
+        html += `
+          <div class="board-cell">
+            <div
+              class="board-node stage-${stageSlug(stage)}"
+              data-tooltip-title="${escHtml(p.name)}"
+              data-tooltip-stage="${escHtml(stage)}"
+              data-tooltip-note="${taskTitles}"
+            ></div>
+          </div>`;
+      });
+    });
+
+    grid.innerHTML = html;
   }
 
   function renderCustomerList() {
@@ -1092,18 +1339,27 @@
 
   let currentProjectId = null;
 
-  function moveProjectToStage(projectId, newStage) {
+  async function moveProjectToStage(projectId, newStage) {
     const project = data.projects.find(p => p.id === projectId);
-    if (project) {
-      project.stage = newStage;
-      if (newStage === 'Closed' && !project.completed_date) {
-        project.completed_date = new Date().toISOString().split('T')[0];
-      }
-      if (currentCustomerId) renderProjectsForCustomer(currentCustomerId);
-      renderProjectsBoard();
-      closeProjectModal();
-      toast(`${project.name} moved to ${newStage}`);
+    if (!project) return;
+
+    const updates = { stage: newStage };
+    if (newStage === 'Closed' && !project.completed_date) {
+      updates.completed_date = new Date().toISOString().split('T')[0];
     }
+
+    const { error } = await supabaseClient.from('projects').update(updates).eq('id', projectId);
+    if (error) {
+      console.error('Stage update error:', error);
+      toast('Error moving project');
+      return;
+    }
+
+    Object.assign(project, updates);
+    if (currentCustomerId) renderProjectsForCustomer(currentCustomerId);
+    renderProjectsBoard();
+    closeProjectModal();
+    toast(`${project.name} moved to ${newStage}`);
   }
 
   function editNotes() {
@@ -1121,31 +1377,20 @@
 
   async function saveNotes() {
     const newNotes = document.getElementById('notes-input').value.trim();
-    try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/projects?id=eq.${currentProjectId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ notes: newNotes || null }),
-        }
-      );
-      if (response.ok) {
-        const project = data.projects.find(p => p.id === currentProjectId);
-        if (project) {
-          project.notes = newNotes || null;
-        }
-        document.getElementById('modal-notes').textContent = newNotes || '(no notes)';
-        cancelEditNotes();
-        toast('Notes saved to Supabase ✓');
-      } else {
-        toast('Error saving notes');
+    const { error } = await supabaseClient
+      .from('projects')
+      .update({ notes: newNotes || null })
+      .eq('id', currentProjectId);
+
+    if (!error) {
+      const project = data.projects.find(p => p.id === currentProjectId);
+      if (project) {
+        project.notes = newNotes || null;
       }
-    } catch (error) {
+      document.getElementById('modal-notes').textContent = newNotes || '(no notes)';
+      cancelEditNotes();
+      toast('Notes saved to Supabase ✓');
+    } else {
       console.error('Save error:', error);
       toast('Error saving notes');
     }
@@ -1227,7 +1472,7 @@
   }
 
   // Initialize
-  loadData();
+  initAuth();
 </script>
 
 </body>
