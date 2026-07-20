@@ -6,6 +6,18 @@ export type Customer = Tables<'customers'>
 export type Asset = Tables<'assets'>
 export type Task = Tables<'tasks'>
 export type ProjectDeliverable = Tables<'project_deliverables'>
+export type CompetitorAnalysisRun = Tables<'competitor_analysis_runs'>
+export type CompetitorSnapshot = Tables<'competitor_snapshots'>
+
+export type CompetitorRunWithSnapshots = CompetitorAnalysisRun & {
+  competitor_snapshots: CompetitorSnapshot[]
+}
+
+export type CompetitorInput = {
+  business_name: string
+  url: string
+  location: string
+}
 
 export type StageTheme = {
   color: string

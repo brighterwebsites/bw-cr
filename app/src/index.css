@@ -392,9 +392,14 @@ a {
   background: var(--gray-200);
 }
 
-.asset-type-website {
+.asset-type-managed_website {
   background: var(--indigo-100);
   color: var(--indigo-600);
+}
+
+.asset-type-website {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .asset-type-staging {
@@ -405,6 +410,130 @@ a {
 .asset-type-other {
   background: var(--gray-200);
   color: var(--gray-500);
+}
+
+.master-list-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.asset-detail-layout {
+  position: relative;
+}
+
+.asset-detail-layout.asset-detail-has-panel {
+  padding-right: min(42%, 720px);
+}
+
+.competitor-phase-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.competitor-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.competitor-form-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.competitor-form-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.competitor-runs-table tbody tr {
+  cursor: pointer;
+}
+
+.competitor-run-row:hover {
+  background: var(--gray-100);
+}
+
+.competitor-run-row-on {
+  background: var(--indigo-50);
+}
+
+.competitor-run-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(40%, 720px);
+  height: 100%;
+  border-left: 1px solid var(--line);
+  background: var(--card);
+  overflow-y: auto;
+  z-index: 2;
+}
+
+.competitor-type-chip {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--gray-200);
+}
+
+.competitor-type-target {
+  background: var(--indigo-100);
+  color: var(--indigo-600);
+}
+
+.competitor-type-competitor {
+  background: var(--sky-100);
+  color: var(--navy-700);
+}
+
+.competitor-url-cell {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.run-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.run-status-running {
+  background: var(--sky-100);
+  color: var(--navy-700);
+}
+
+.run-status-done {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.run-status-failed {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .jdp-readonly {

@@ -8,7 +8,7 @@ Nav: CRM → Assets
 |---|---|
 | `name` | Primary label — editable |
 | `asset_url` | Open link — editable |
-| `asset_type` | `website` \| `staging` \| `other` — editable |
+| `asset_type` | `managed_website` \| `website` (proposal) \| `staging` \| `other` — editable |
 | `customer_id` | Required — editable |
 | `project_id` | **Current project** (optional) — editable. Later: many related projects + one current |
 | `conversion_event_name` | GA4 event name — editable |
@@ -24,6 +24,7 @@ Master–detail (same pattern as Customers).
 ### Left column
 - Search (name, URL, customer)
 - **+ New asset**
+- **Show all types** — default list shows `managed_website` + `staging` only
 - Vertical list: name, URL, type chip, customer name
 
 ### Main section
@@ -32,6 +33,7 @@ Master–detail (same pattern as Customers).
 - **Integrations** (read-only): health score, GSC / GA4 / WP CLI status, Hermes / Telegram / workspace
 - **Save** / cancel on create
 - **Integrations** accordion at end (display-only): health, GSC / GA4 / WP CLI, Hermes / Telegram / workspace
+- **Competitor snapshots** accordion — see `docs/UI-Competitor-Snapshot.md`
 
 No connection wiring in v1 UI — statuses and Hermes fields are display-only until integrations land.
 

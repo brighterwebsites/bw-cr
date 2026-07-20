@@ -13,6 +13,8 @@
 | `rls` | `20260720010003_rls.sql` |
 | `functions_triggers` | `20260720010004_functions_triggers.sql` |
 | `profiles` | `20260720130001_profiles.sql` |
+| `add_managed_website_asset_type` | `20260720200001_add_managed_website_asset_type.sql` |
+| `competitor_runs` | `20260720200002_competitor_runs.sql` |
 
 Combined paste file (reference only): `supabase/apply_v1.sql`.
 
@@ -87,7 +89,8 @@ deliverable_type     : goal_target | collection_of_work | guaranteed_outcome
 deliverable_status   : planned | in_progress | done | dropped
 task_status          : not_started | in_progress | blocked | completed
 task_type            : task | agent_task | internal
-asset_type           : website | staging | other
+asset_type           : managed_website | website | staging | other
+competitor_run_status: pending | running | done | failed
 artifact_type        : report | data | proposal | other
 artifact_status      : draft | final | archived
 content_type         : link | md | json | csv | other
@@ -198,7 +201,7 @@ Integration hub. Connection *status* + Hermes *pointers* on the row for v1 UI; s
 | `id` | `bigint` PK | |
 | `customer_id` | `bigint not null` FK → `customers` | |
 | `project_id` | `bigint null` FK → `projects` | **Current project** for this asset. Nullable. Later: many related projects (junction) + this column stays current |
-| `asset_type` | `asset_type not null default 'website'` | Was bare `int` |
+| `asset_type` | `asset_type not null default 'managed_website'` | `managed_website` = live site; `website` = proposal-stage URL |
 | `name` | `text not null default ''` | Display label (e.g. "Live site") |
 | `asset_url` | `text not null default ''` | |
 | `health_score` | `numeric null` | DataForSEO / audit score when available |
@@ -308,6 +311,27 @@ Wide row for dashboard cards. Source notes corrected (GSC vs GA4).
 | `referring_domains` | `numeric null` | |
 | `domain_rank` | `numeric null` | |
 | `spam_score` | `numeric null` | |
+| `run_id` | `bigint null` FK → `competitor_analysis_runs` | Groups rows from one analysis run |
+| `top_100_keywords` | `numeric null` | |
+| `position_21_50` | `numeric null` | |
+| `position_51_100` | `numeric null` | |
+| `version` | `integer not null default 1` | |
+| `created_at` / `updated_at` | `timestamptz` | |
+
+---
+
+### `competitor_analysis_runs` — AGREED (2026-07-20)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `bigint` PK | |
+| `asset_id` | `bigint not null` FK → `assets` on delete cascade | Subject asset |
+| `search_location_code` | `integer not null default 2036` | DataForSEO location code |
+| `search_location_name` | `text not null default 'Australia'` | Display label |
+| `search_language_code` | `text not null default 'en'` | |
+| `competitor_inputs` | `jsonb not null default '[]'` | Competitor form inputs (not target) |
+| `status` | `competitor_run_status not null default 'pending'` | |
+| `error_message` | `text not null default ''` | Set on `failed` |
 | `version` | `integer not null default 1` | |
 | `created_at` / `updated_at` | `timestamptz` | |
 

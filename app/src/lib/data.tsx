@@ -11,6 +11,8 @@ import { supabase } from './supabaseClient'
 import type { TablesInsert, TablesUpdate } from '../types/database.types'
 import type {
   Asset,
+  CompetitorInput,
+  CompetitorRunWithSnapshots,
   Customer,
   Project,
   ProjectDeliverable,
@@ -18,7 +20,16 @@ import type {
   Task,
 } from './pipeline'
 
-export type { Asset, Customer, Project, ProjectDeliverable, ProjectStage, Task }
+export type {
+  Asset,
+  CompetitorInput,
+  CompetitorRunWithSnapshots,
+  Customer,
+  Project,
+  ProjectDeliverable,
+  ProjectStage,
+  Task,
+}
 
 type CustomerInsert = TablesInsert<'customers'>
 type CustomerUpdate = TablesUpdate<'customers'>
@@ -28,6 +39,18 @@ type TaskInsert = TablesInsert<'tasks'>
 type TaskUpdate = TablesUpdate<'tasks'>
 type DeliverableInsert = TablesInsert<'project_deliverables'>
 type DeliverableUpdate = TablesUpdate<'project_deliverables'>
+type CompetitorRunInsert = TablesInsert<'competitor_analysis_runs'>
+type CompetitorSnapshotInsert = TablesInsert<'competitor_snapshots'>
+
+export type CreateCompetitorRunInput = {
+  asset_id: number
+  asset_name: string
+  asset_url: string
+  search_location_code: number
+  search_location_name: string
+  search_language_code: string
+  competitors: CompetitorInput[]
+}
 
 interface DataState {
   loading: boolean
@@ -50,6 +73,8 @@ interface DataState {
   createDeliverable: (row: DeliverableInsert) => Promise<ProjectDeliverable>
   updateDeliverable: (id: number, patch: DeliverableUpdate) => Promise<ProjectDeliverable>
   deleteDeliverable: (id: number) => Promise<void>
+  fetchCompetitorRunsForAsset: (assetId: number) => Promise<CompetitorRunWithSnapshots[]>
+  createCompetitorRun: (input: CreateCompetitorRunInput) => Promise<CompetitorRunWithSnapshots>
 }
 
 const DataContext = createContext<DataState | null>(null)
@@ -254,6 +279,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [refresh],
   )
 
+  const fetchCompetitorRunsForAsset = useCallback(async (assetId: number) => {
+    const { data, error: fetchErr } = await supabase
+      .from('competitor_analysis_runs')
+      .select('*, competitor_snapshots(*)')
+      .eq('asset_id', assetId)
+      .order('created_at', { ascending: false })
+    if (fetchErr) throw new Error(fetchErr.message)
+    return (data ?? []) as CompetitorRunWithSnapshots[]
+  }, [])
+
+  const createCompetitorRun = useCallback(
+    async (input: CreateCompetitorRunInput) => {
+      const runRow: CompetitorRunInsert = {
+        asset_id: input.asset_id,
+        search_location_code: input.search_location_code,
+        search_location_name: input.search_location_name,
+        search_language_code: input.search_language_code,
+        competitor_inputs: input.competitors,
+        status: 'pending',
+      }
+      const { data: run, error: runErr } = await supabase
+        .from('competitor_analysis_runs')
+        .insert(runRow)
+        .select('*')
+        .single()
+      if (runErr) throw new Error(runErr.message)
+
+      const snapshots: CompetitorSnapshotInsert[] = [
+        {
+          asset_id: input.asset_id,
+          run_id: run.id,
+          type: 'target',
+          business_name: input.asset_name,
+          url: input.asset_url,
+        },
+        ...input.competitors.map((c) => ({
+          asset_id: input.asset_id,
+          run_id: run.id,
+          type: 'competitor' as const,
+          business_name: c.business_name,
+          url: c.url,
+          location: c.location,
+        })),
+      ]
+      const { error: snapErr } = await supabase.from('competitor_snapshots').insert(snapshots)
+      if (snapErr) throw new Error(snapErr.message)
+
+      return { ...run, competitor_snapshots: [] } as CompetitorRunWithSnapshots
+    },
+    [],
+  )
+
   const value = useMemo(
     () => ({
       loading,
@@ -276,6 +353,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createDeliverable,
       updateDeliverable,
       deleteDeliverable,
+      fetchCompetitorRunsForAsset,
+      createCompetitorRun,
     }),
     [
       loading,
@@ -298,6 +377,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createDeliverable,
       updateDeliverable,
       deleteDeliverable,
+      fetchCompetitorRunsForAsset,
+      createCompetitorRun,
     ],
   )
 

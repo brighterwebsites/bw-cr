@@ -1,10 +1,20 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { CompetitorSnapshotsSection } from '../features/assets/CompetitorSnapshotsSection'
 import { useData } from '../lib/data'
 import { useAppNav } from '../lib/nav'
 import type { Asset, Customer, Project } from '../lib/pipeline'
 
 type AssetType = Asset['asset_type']
 type ConnectionStatus = Asset['gsc_status']
+
+const DEFAULT_LIST_TYPES: AssetType[] = ['managed_website', 'staging']
+
+const ASSET_TYPE_LABELS: Record<AssetType, string> = {
+  managed_website: 'Managed website',
+  website: 'Website (proposal)',
+  staging: 'Staging',
+  other: 'Other',
+}
 
 type AssetForm = {
   name: string
@@ -18,7 +28,7 @@ type AssetForm = {
 const emptyForm = (customerId: number | '' = ''): AssetForm => ({
   name: '',
   asset_url: '',
-  asset_type: 'website',
+  asset_type: 'managed_website',
   customer_id: customerId,
   project_id: '',
   conversion_event_name: '',
@@ -48,6 +58,7 @@ export default function AssetsPage() {
   const { assets, customers, projects, loading, error, updateAsset, createAsset } = useData()
   const { assetsIntent, consumeAssetsIntent } = useAppNav()
   const [search, setSearch] = useState('')
+  const [showAllTypes, setShowAllTypes] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
   const [createDraft, setCreateDraft] = useState<AssetForm | null>(null)
@@ -77,19 +88,23 @@ export default function AssetsPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const list = !q
+    let list = showAllTypes
       ? assets
-      : assets.filter((a) => {
-          const cust = customerById.get(a.customer_id)?.business_name ?? ''
-          return (
-            a.name.toLowerCase().includes(q) ||
-            a.asset_url.toLowerCase().includes(q) ||
-            cust.toLowerCase().includes(q) ||
-            a.asset_type.toLowerCase().includes(q)
-          )
-        })
+      : assets.filter((a) => DEFAULT_LIST_TYPES.includes(a.asset_type))
+    if (q) {
+      list = list.filter((a) => {
+        const cust = customerById.get(a.customer_id)?.business_name ?? ''
+        return (
+          a.name.toLowerCase().includes(q) ||
+          a.asset_url.toLowerCase().includes(q) ||
+          cust.toLowerCase().includes(q) ||
+          a.asset_type.toLowerCase().includes(q) ||
+          (ASSET_TYPE_LABELS[a.asset_type] ?? '').toLowerCase().includes(q)
+        )
+      })
+    }
     return [...list].sort((a, b) => a.name.localeCompare(b.name))
-  }, [assets, search, customerById])
+  }, [assets, search, customerById, showAllTypes])
 
   const selected = assets.find((a) => a.id === selectedId) ?? null
 
@@ -124,6 +139,14 @@ export default function AssetsPage() {
             + New asset
           </button>
         </div>
+        <label className="master-list-filter">
+          <input
+            type="checkbox"
+            checked={showAllTypes}
+            onChange={(e) => setShowAllTypes(e.target.checked)}
+          />
+          Show all types
+        </label>
         <div className="master-list-items">
           {filtered.map((a) => (
             <button
@@ -139,7 +162,9 @@ export default function AssetsPage() {
               <div className="master-item-name">{a.name || 'Untitled asset'}</div>
               {a.asset_url && <div className="master-item-sub">{a.asset_url}</div>}
               <div className="master-item-stage">
-                <span className={`asset-type-pill asset-type-${a.asset_type}`}>{a.asset_type}</span>
+                <span className={`asset-type-pill asset-type-${a.asset_type}`}>
+                  {ASSET_TYPE_LABELS[a.asset_type] ?? a.asset_type}
+                </span>
                 <span className="mutedtext" style={{ marginLeft: 6 }}>
                   {customerName(customers, a.customer_id)}
                 </span>
@@ -229,12 +254,14 @@ function AssetDetail({
   const [err, setErr] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
   const [integrationsOpen, setIntegrationsOpen] = useState(false)
+  const [runPanelOpen, setRunPanelOpen] = useState(false)
 
   useEffect(() => {
     setForm(initial)
     setErr(null)
     setOk(false)
     setIntegrationsOpen(false)
+    setRunPanelOpen(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync on assetId / mode only
   }, [assetId, mode])
 
@@ -286,7 +313,7 @@ function AssetDetail({
   const dirty = JSON.stringify(form) !== JSON.stringify(initial)
 
   return (
-    <div className="jdp">
+    <div className={`jdp asset-detail-layout ${runPanelOpen ? 'asset-detail-has-panel' : ''}`}>
       <div className="jdp-header">
         <div className="jdp-title">
           <div className="jdp-name">{mode === 'create' ? 'New asset' : form.name || 'Asset'}</div>
@@ -338,9 +365,11 @@ function AssetDetail({
               value={form.asset_type}
               onChange={(e) => set('asset_type', e.target.value as AssetType)}
             >
-              <option value="website">website</option>
-              <option value="staging">staging</option>
-              <option value="other">other</option>
+              {(Object.keys(ASSET_TYPE_LABELS) as AssetType[]).map((t) => (
+                <option key={t} value={t}>
+                  {ASSET_TYPE_LABELS[t]}
+                </option>
+              ))}
             </select>
           </div>
           <div className="jdp-field">
@@ -429,6 +458,10 @@ function AssetDetail({
             </div>
           )}
         </div>
+      )}
+
+      {mode === 'edit' && asset && (
+        <CompetitorSnapshotsSection asset={asset} onRunPanelChange={setRunPanelOpen} />
       )}
     </div>
   )

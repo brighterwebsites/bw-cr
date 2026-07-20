@@ -199,12 +199,110 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['tasks']['Insert']>
         Relationships: []
       }
+      competitor_analysis_runs: {
+        Row: {
+          id: number
+          asset_id: number
+          search_location_code: number
+          search_location_name: string
+          search_language_code: string
+          competitor_inputs: Json
+          status: Database['public']['Enums']['competitor_run_status']
+          error_message: string
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: number
+          id?: number
+          search_location_code?: number
+          search_location_name?: string
+          search_language_code?: string
+          competitor_inputs?: Json
+          status?: Database['public']['Enums']['competitor_run_status']
+          error_message?: string
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['competitor_analysis_runs']['Insert']>
+        Relationships: []
+      }
+      competitor_snapshots: {
+        Row: {
+          id: number
+          asset_id: number
+          run_id: number | null
+          type: Database['public']['Enums']['competitor_type']
+          business_name: string
+          url: string
+          location: string
+          notes: string
+          total_keywords: number | null
+          organic_traffic: number | null
+          traffic_value: number | null
+          paid_traffic: number | null
+          top_3_keywords: number | null
+          top_10_keywords: number | null
+          top_100_keywords: number | null
+          position_1: number | null
+          position_2_3: number | null
+          position_4_10: number | null
+          position_11_20: number | null
+          position_21_50: number | null
+          position_51_100: number | null
+          keyword_gaps: number | null
+          backlinks: number | null
+          referring_domains: number | null
+          domain_rank: number | null
+          spam_score: number | null
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: number
+          type: Database['public']['Enums']['competitor_type']
+          business_name: string
+          id?: number
+          run_id?: number | null
+          url?: string
+          location?: string
+          notes?: string
+          total_keywords?: number | null
+          organic_traffic?: number | null
+          traffic_value?: number | null
+          paid_traffic?: number | null
+          top_3_keywords?: number | null
+          top_10_keywords?: number | null
+          top_100_keywords?: number | null
+          position_1?: number | null
+          position_2_3?: number | null
+          position_4_10?: number | null
+          position_11_20?: number | null
+          position_21_50?: number | null
+          position_51_100?: number | null
+          keyword_gaps?: number | null
+          backlinks?: number | null
+          referring_domains?: number | null
+          domain_rank?: number | null
+          spam_score?: number | null
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['competitor_snapshots']['Insert']>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: {
       customer_lifecycle: 'lead' | 'customer' | 'inactive'
-      asset_type: 'website' | 'staging' | 'other'
+      asset_type: 'website' | 'staging' | 'other' | 'managed_website'
+      competitor_run_status: 'pending' | 'running' | 'done' | 'failed'
+      competitor_type: 'competitor' | 'target' | 'business'
       connection_status: 'unknown' | 'connected' | 'error' | 'disconnected'
       deliverable_type: 'goal_target' | 'collection_of_work' | 'guaranteed_outcome'
       deliverable_status: 'planned' | 'in_progress' | 'done' | 'dropped'
