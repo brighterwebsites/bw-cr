@@ -364,7 +364,7 @@ function AssetDetail({
             </select>
           </div>
           <div className="jdp-field">
-            <span className="jdp-label">Project</span>
+            <span className="jdp-label">Current project</span>
             <select
               className="jdp-input"
               value={form.project_id === '' ? '' : String(form.project_id)}

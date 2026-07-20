@@ -197,7 +197,7 @@ Integration hub. Connection *status* + Hermes *pointers* on the row for v1 UI; s
 |---|---|---|
 | `id` | `bigint` PK | |
 | `customer_id` | `bigint not null` FK → `customers` | |
-| `project_id` | `bigint null` FK → `projects` | Nullable: asset can exist before/without a project |
+| `project_id` | `bigint null` FK → `projects` | **Current project** for this asset. Nullable. Later: many related projects (junction) + this column stays current |
 | `asset_type` | `asset_type not null default 'website'` | Was bare `int` |
 | `name` | `text not null default ''` | Display label (e.g. "Live site") |
 | `asset_url` | `text not null default ''` | |
