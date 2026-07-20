@@ -63,10 +63,19 @@ function websiteHref(url: string) {
 export default function CustomersPage() {
   const { customers, projects, assets, stages, loading, error, updateCustomer, createCustomer } =
     useData()
+  const { customersIntent, consumeCustomersIntent } = useAppNav()
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
   const [createDraft, setCreateDraft] = useState<CustomerForm | null>(null)
+
+  useEffect(() => {
+    if (!customersIntent) return
+    setCreating(false)
+    setCreateDraft(null)
+    setSelectedId(customersIntent.customerId)
+    consumeCustomersIntent()
+  }, [customersIntent, consumeCustomersIntent])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()

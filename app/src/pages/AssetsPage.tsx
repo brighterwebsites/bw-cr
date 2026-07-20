@@ -54,9 +54,18 @@ export default function AssetsPage() {
 
   useEffect(() => {
     if (!assetsIntent) return
-    setCreating(false)
-    setCreateDraft(null)
-    setSelectedId(assetsIntent.assetId)
+    if (assetsIntent.mode === 'open') {
+      setCreating(false)
+      setCreateDraft(null)
+      setSelectedId(assetsIntent.assetId)
+    } else {
+      setCreating(true)
+      setCreateDraft({
+        ...emptyForm(assetsIntent.customerId),
+        project_id: assetsIntent.projectId,
+      })
+      setSelectedId(null)
+    }
     consumeAssetsIntent()
   }, [assetsIntent, consumeAssetsIntent])
 

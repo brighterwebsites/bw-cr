@@ -97,8 +97,10 @@ export default function ProjectDetailPanel({
     createProject,
     createCustomer,
     updateTask,
+    createTask,
   } = useData()
-  const { openTasksForProject, openAssetRecord } = useAppNav()
+  const { openTasksForProject, openAssetRecord, openAssetCreate, openCustomerRecord } =
+    useAppNav()
 
   const project = projectId === 'new' ? undefined : projects.find((p) => p.id === projectId)
   const firstStage = stages[0]
@@ -111,6 +113,10 @@ export default function ProjectDetailPanel({
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskDue, setNewTaskDue] = useState('')
+  const [taskAdding, setTaskAdding] = useState(false)
+  const [taskErr, setTaskErr] = useState<string | null>(null)
 
   useEffect(() => {
     if (projectId === 'new') {
@@ -122,6 +128,9 @@ export default function ProjectDetailPanel({
     }
     setErr(null)
     setOk(false)
+    setNewTaskTitle('')
+    setNewTaskDue('')
+    setTaskErr(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
@@ -243,6 +252,32 @@ export default function ProjectDetailPanel({
     }
   }
 
+  async function handleAddTask() {
+    if (projectId === 'new') return
+    if (!newTaskTitle.trim()) {
+      setTaskErr('Task title is required.')
+      return
+    }
+    setTaskAdding(true)
+    setTaskErr(null)
+    try {
+      await createTask({
+        title: newTaskTitle.trim(),
+        project_id: projectId,
+        customer_id: form.customer_id === '' ? null : form.customer_id,
+        due_on: newTaskDue || null,
+        status: 'not_started',
+        task_type: 'task',
+      })
+      setNewTaskTitle('')
+      setNewTaskDue('')
+    } catch (e) {
+      setTaskErr(e instanceof Error ? e.message : 'Could not create task')
+    } finally {
+      setTaskAdding(false)
+    }
+  }
+
   if (projectId !== 'new' && !project) {
     return (
       <div className="jdp">
@@ -318,7 +353,20 @@ export default function ProjectDetailPanel({
 
           {(projectId !== 'new' || customerMode === 'existing') && (
             <div className="jdp-field jdp-full">
-              <span className="jdp-label">{projectId === 'new' ? 'Select customer' : 'Customer'}</span>
+              <div className="jdp-label-row">
+                <span className="jdp-label">
+                  {projectId === 'new' ? 'Select customer' : 'Customer'}
+                </span>
+                {projectId !== 'new' && form.customer_id !== '' && (
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => openCustomerRecord(form.customer_id as number)}
+                  >
+                    Open customer
+                  </button>
+                )}
+              </div>
               <select
                 className="jdp-input"
                 value={form.customer_id === '' ? '' : String(form.customer_id)}
@@ -480,9 +528,39 @@ export default function ProjectDetailPanel({
                 Open in Tasks
               </button>
             </div>
+            <div className="panel-inline-add">
+              <input
+                className="jdp-input"
+                placeholder="New task title"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handleAddTask()
+                }}
+              />
+              <input
+                className="jdp-input"
+                type="date"
+                value={newTaskDue}
+                onChange={(e) => setNewTaskDue(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={taskAdding}
+                onClick={() => void handleAddTask()}
+              >
+                {taskAdding ? '…' : 'Add task'}
+              </button>
+            </div>
+            {taskErr && (
+              <div className="login-error" style={{ marginTop: 6 }}>
+                {taskErr}
+              </div>
+            )}
             {projectTasks.length === 0 ? (
               <div className="mutedtext" style={{ marginTop: 8 }}>
-                No tasks on this project.
+                No tasks on this project yet.
               </div>
             ) : (
               <table className="table panel-mini-table">
@@ -538,7 +616,20 @@ export default function ProjectDetailPanel({
           <div className="jdp-section">
             <div className="jdp-section-title">Assets ({projectAssets.length})</div>
             {projectAssets.length === 0 ? (
-              <div className="mutedtext">No assets with this as current project.</div>
+              <div className="panel-empty-actions">
+                <div className="mutedtext">No assets with this as current project.</div>
+                {form.customer_id !== '' && (
+                  <button
+                    type="button"
+                    className="btn btn-gray"
+                    onClick={() =>
+                      openAssetCreate(form.customer_id as number, projectId as number)
+                    }
+                  >
+                    + Add asset for this project
+                  </button>
+                )}
+              </div>
             ) : (
               <table className="table panel-mini-table">
                 <thead>

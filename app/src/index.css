@@ -1095,6 +1095,37 @@ a {
   color: var(--muted);
 }
 
+.jdp-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.panel-inline-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.panel-inline-add .jdp-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.panel-inline-add .jdp-input[type='date'] {
+  flex: 0 1 150px;
+}
+
+.panel-empty-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
 /* ── tasks table (stock-style) ───────────────────────── */
 .filter-row {
   display: flex;

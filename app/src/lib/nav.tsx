@@ -14,8 +14,12 @@ export type TasksIntent = {
   filter?: 'all' | 'current'
 }
 
-export type AssetsIntent = {
-  assetId: number
+export type AssetsIntent =
+  | { mode: 'open'; assetId: number }
+  | { mode: 'create'; customerId: number; projectId: number }
+
+export type CustomersIntent = {
+  customerId: number
 }
 
 export type PipelineIntent = {
@@ -31,6 +35,10 @@ type AppNavValue = {
   assetsIntent: AssetsIntent | null
   consumeAssetsIntent: () => void
   openAssetRecord: (assetId: number) => void
+  openAssetCreate: (customerId: number, projectId: number) => void
+  customersIntent: CustomersIntent | null
+  consumeCustomersIntent: () => void
+  openCustomerRecord: (customerId: number) => void
   pipelineIntent: PipelineIntent | null
   consumePipelineIntent: () => void
   openProjectInPipeline: (projectId: number) => void
@@ -42,10 +50,12 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
   const [page, setPage] = useState<Page>('pipeline')
   const [tasksIntent, setTasksIntent] = useState<TasksIntent | null>(null)
   const [assetsIntent, setAssetsIntent] = useState<AssetsIntent | null>(null)
+  const [customersIntent, setCustomersIntent] = useState<CustomersIntent | null>(null)
   const [pipelineIntent, setPipelineIntent] = useState<PipelineIntent | null>(null)
 
   const consumeTasksIntent = useCallback(() => setTasksIntent(null), [])
   const consumeAssetsIntent = useCallback(() => setAssetsIntent(null), [])
+  const consumeCustomersIntent = useCallback(() => setCustomersIntent(null), [])
   const consumePipelineIntent = useCallback(() => setPipelineIntent(null), [])
 
   const openTasksForProject = useCallback((projectName: string) => {
@@ -54,8 +64,18 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const openAssetRecord = useCallback((assetId: number) => {
-    setAssetsIntent({ assetId })
+    setAssetsIntent({ mode: 'open', assetId })
     setPage('assets')
+  }, [])
+
+  const openAssetCreate = useCallback((customerId: number, projectId: number) => {
+    setAssetsIntent({ mode: 'create', customerId, projectId })
+    setPage('assets')
+  }, [])
+
+  const openCustomerRecord = useCallback((customerId: number) => {
+    setCustomersIntent({ customerId })
+    setPage('customers')
   }, [])
 
   const openProjectInPipeline = useCallback((projectId: number) => {
@@ -73,6 +93,10 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
       assetsIntent,
       consumeAssetsIntent,
       openAssetRecord,
+      openAssetCreate,
+      customersIntent,
+      consumeCustomersIntent,
+      openCustomerRecord,
       pipelineIntent,
       consumePipelineIntent,
       openProjectInPipeline,
@@ -85,6 +109,10 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
       assetsIntent,
       consumeAssetsIntent,
       openAssetRecord,
+      openAssetCreate,
+      customersIntent,
+      consumeCustomersIntent,
+      openCustomerRecord,
       pipelineIntent,
       consumePipelineIntent,
       openProjectInPipeline,

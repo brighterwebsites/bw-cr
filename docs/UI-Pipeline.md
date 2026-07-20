@@ -11,8 +11,9 @@ Nav: Pipeline
 ## Panel (edit)
 - All project fields editable + Save
 - **Deliverables** CRUD table (title, type, status)
-- **Tasks** mini-table: Status (inline) · Title · Due badge — **Open in Tasks** pre-fills search with project name
-- **Assets** mini-table: Name · URL · Open URL · Open record (Assets page)
+- **Tasks** — inline add (title + due) · mini-table with status · **Open in Tasks**
+- **Assets** — table or **+ Add asset for this project** (prefills Assets create) · Open URL · Open record
+- **Customer** — **Open customer** link on project panel
 
 ## Board
 Stage/step columns from `project_stages`; click row opens panel. Slide-in width: `min(50%, 960px)`.
