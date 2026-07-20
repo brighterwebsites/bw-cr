@@ -1,0 +1,45 @@
+---
+description: Token-efficient AI workflows — APIs and scripts first, agents when judgment is needed
+alwaysApply: true
+---
+
+# AI workflow efficiency
+
+Design integrations (GSC, GA4, WP, Hermes, Edge Functions) for **minimum token spend** and **maximum reuse**.
+
+## Decision order
+
+1. **Direct API call** — fetch or write data deterministically (GSC, GA4, Supabase, WP REST).
+2. **Script / Edge Function** — known, repeatable logic (aggregate, diff, threshold, upsert rows).
+3. **Cheap model** — labeling, short summaries, draft text from **pre-aggregated** inputs only.
+4. **Strong model** — strategy, SERP synthesis, multi-source judgment; **human-approved** before execution.
+
+Skip straight to 1–2 when no reasoning is required.
+
+## Triggers
+
+| Prefer | Avoid |
+|---|---|
+| Cron / pg_cron / scheduled Edge Function | Chat or agent polling as the primary data pipeline |
+| Event after data is persisted (row inserted, job done) | Re-running an agent because the UI opened |
+| Batch per asset or per scan window | Per-page or per-row LLM calls in a loop |
+| Idempotent jobs (safe to re-run) | One-off prompts with no stored output |
+
+## Scripts and chains
+
+- Break work into **small logical units** (pull, normalize, score, upsert, notify) that can be chained or reused.
+- Each step should have a **single responsibility** and a **stable input/output shape** (JSON or typed rows).
+- Persist results to Postgres; UI and reports **read the DB**, not live agent output.
+- Never pass raw API dumps (full GSC exports, HTML crawls, post lists) to a model — **aggregate or filter first**.
+
+## Agent and task boundaries
+
+- Opportunities, metrics, and page lists come from **rules + scripts**; agents **act on approved tasks**, not discover everything from scratch.
+- `agent_task` rows carry enough structured context that Hermes/skills need **no broad re-fetch**.
+- Destructive or client-visible actions (publish, redirect, noindex, WP meta write, outreach) require **explicit human approval** before agent execution.
+
+## Model and cost hygiene
+
+- Default: **no model** for pulls and normalization.
+- Use structured outputs (fixed JSON schema) to avoid retry/conversation loops.
+- Log job inputs/outputs; do not log secrets or full credential payloads.
