@@ -9,24 +9,29 @@ import {
 import type { ReactNode } from 'react'
 import { supabase } from './supabaseClient'
 import type { TablesInsert, TablesUpdate } from '../types/database.types'
-import type { Customer, Project, ProjectStage, Task } from './pipeline'
+import type { Asset, Customer, Project, ProjectStage, Task } from './pipeline'
 
-export type { Customer, Project, ProjectStage, Task }
+export type { Asset, Customer, Project, ProjectStage, Task }
 
 type CustomerInsert = TablesInsert<'customers'>
 type CustomerUpdate = TablesUpdate<'customers'>
+type AssetInsert = TablesInsert<'assets'>
+type AssetUpdate = TablesUpdate<'assets'>
 
 interface DataState {
   loading: boolean
   error: string | null
   customers: Customer[]
   projects: Project[]
+  assets: Asset[]
   stages: ProjectStage[]
   tasks: Task[]
   refresh: () => Promise<void>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
   updateCustomer: (id: number, patch: CustomerUpdate) => Promise<Customer>
   createCustomer: (row: CustomerInsert) => Promise<Customer>
+  updateAsset: (id: number, patch: AssetUpdate) => Promise<Asset>
+  createAsset: (row: AssetInsert) => Promise<Asset>
 }
 
 const DataContext = createContext<DataState | null>(null)
@@ -36,20 +41,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [assets, setAssets] = useState<Asset[]>([])
   const [stages, setStages] = useState<ProjectStage[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
 
   const refresh = useCallback(async () => {
     setError(null)
-    const [custRes, projRes, stageRes, taskRes] = await Promise.all([
+    const [custRes, projRes, assetRes, stageRes, taskRes] = await Promise.all([
       supabase.from('customers').select('*').order('business_name'),
       supabase.from('projects').select('*').order('updated_at', { ascending: false }),
+      supabase.from('assets').select('*').order('name'),
       supabase.from('project_stages').select('*').order('ordinal'),
       supabase.from('tasks').select('*').order('due_on', { ascending: true, nullsFirst: false }),
     ])
     const err =
       custRes.error?.message ??
       projRes.error?.message ??
+      assetRes.error?.message ??
       stageRes.error?.message ??
       taskRes.error?.message ??
       null
@@ -59,6 +67,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     setCustomers(custRes.data ?? [])
     setProjects(projRes.data ?? [])
+    setAssets(assetRes.data ?? [])
     setStages(stageRes.data ?? [])
     setTasks(taskRes.data ?? [])
   }, [])
@@ -113,30 +122,65 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [refresh],
   )
 
+  const updateAsset = useCallback(
+    async (id: number, patch: AssetUpdate) => {
+      const { data, error: updErr } = await supabase
+        .from('assets')
+        .update(patch)
+        .eq('id', id)
+        .select('*')
+        .single()
+      if (updErr) throw new Error(updErr.message)
+      await refresh()
+      return data
+    },
+    [refresh],
+  )
+
+  const createAsset = useCallback(
+    async (row: AssetInsert) => {
+      const { data, error: insErr } = await supabase
+        .from('assets')
+        .insert(row)
+        .select('*')
+        .single()
+      if (insErr) throw new Error(insErr.message)
+      await refresh()
+      return data
+    },
+    [refresh],
+  )
+
   const value = useMemo(
     () => ({
       loading,
       error,
       customers,
       projects,
+      assets,
       stages,
       tasks,
       refresh,
       updateProject,
       updateCustomer,
       createCustomer,
+      updateAsset,
+      createAsset,
     }),
     [
       loading,
       error,
       customers,
       projects,
+      assets,
       stages,
       tasks,
       refresh,
       updateProject,
       updateCustomer,
       createCustomer,
+      updateAsset,
+      createAsset,
     ],
   )
 

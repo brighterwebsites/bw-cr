@@ -3,6 +3,7 @@ import type { Tables } from '../types/database.types'
 export type ProjectStage = Tables<'project_stages'>
 export type Project = Tables<'projects'>
 export type Customer = Tables<'customers'>
+export type Asset = Tables<'assets'>
 export type Task = Tables<'tasks'>
 
 export type StageTheme = {

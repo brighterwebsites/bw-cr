@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 import { DataProvider } from '../lib/data'
 import PipelinePage from './PipelinePage'
 import CustomersPage from './CustomersPage'
+import AssetsPage from './AssetsPage'
 import StubPage from './StubPage'
 
 type Page = 'pipeline' | 'customers' | 'tasks' | 'assets'
@@ -75,9 +76,7 @@ function ShellInner() {
           {page === 'tasks' && (
             <StubPage icon="✓" title="Tasks" note="Task list and create form — next up." />
           )}
-          {page === 'assets' && (
-            <StubPage icon="🌐" title="Assets" note="Websites, integrations, and metrics — next up." />
-          )}
+          {page === 'assets' && <AssetsPage />}
         </main>
       </div>
     </div>

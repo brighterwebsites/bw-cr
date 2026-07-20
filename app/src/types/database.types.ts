@@ -97,6 +97,48 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['project_stages']['Row']>
         Relationships: []
       }
+      assets: {
+        Row: {
+          id: number
+          customer_id: number
+          project_id: number | null
+          asset_type: Database['public']['Enums']['asset_type']
+          name: string
+          asset_url: string
+          health_score: number | null
+          conversion_event_name: string
+          gsc_status: Database['public']['Enums']['connection_status']
+          ga4_status: Database['public']['Enums']['connection_status']
+          wp_cli_status: Database['public']['Enums']['connection_status']
+          hermes_profile: string
+          telegram_topic: string
+          workspace: string
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          customer_id: number
+          id?: number
+          project_id?: number | null
+          asset_type?: Database['public']['Enums']['asset_type']
+          name?: string
+          asset_url?: string
+          health_score?: number | null
+          conversion_event_name?: string
+          gsc_status?: Database['public']['Enums']['connection_status']
+          ga4_status?: Database['public']['Enums']['connection_status']
+          wp_cli_status?: Database['public']['Enums']['connection_status']
+          hermes_profile?: string
+          telegram_topic?: string
+          workspace?: string
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['assets']['Insert']>
+        Relationships: []
+      }
       tasks: {
         Row: {
           id: number
@@ -136,6 +178,8 @@ export type Database = {
     Functions: Record<string, never>
     Enums: {
       customer_lifecycle: 'lead' | 'customer' | 'inactive'
+      asset_type: 'website' | 'staging' | 'other'
+      connection_status: 'unknown' | 'connected' | 'error' | 'disconnected'
       task_status: 'not_started' | 'in_progress' | 'blocked' | 'completed'
       task_type: 'task' | 'agent_task' | 'internal'
     }

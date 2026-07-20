@@ -383,6 +383,67 @@ a {
   color: var(--gray-500);
 }
 
+.asset-type-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--gray-200);
+}
+
+.asset-type-website {
+  background: var(--indigo-100);
+  color: var(--indigo-600);
+}
+
+.asset-type-staging {
+  background: var(--sky-100);
+  color: var(--navy-700);
+}
+
+.asset-type-other {
+  background: var(--gray-200);
+  color: var(--gray-500);
+}
+
+.jdp-readonly {
+  font-size: 13px;
+  padding: 8px 0;
+  min-height: 20px;
+}
+
+.conn-status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--gray-200);
+  color: var(--gray-500);
+}
+
+.conn-status-connected {
+  background: var(--indigo-100);
+  color: var(--indigo-600);
+}
+
+.conn-status-error {
+  background: var(--coral-100);
+  color: var(--coral-600);
+}
+
+.conn-status-disconnected {
+  background: var(--gray-200);
+  color: var(--muted);
+}
+
+.conn-status-unknown {
+  background: var(--sky-100);
+  color: var(--navy-700);
+}
+
 /* stub */
 .stub-page {
   display: flex;
