@@ -721,6 +721,240 @@ a {
   color: var(--coral-600);
 }
 
+/* ── customers master-detail ─────────────────────────── */
+.master-detail {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.master-list {
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.master-list-search {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.master-list-search input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.master-list-search input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.master-list-new {
+  width: 100%;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+.master-list-items {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.master-list-empty {
+  padding: 24px 12px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 13px;
+}
+
+.master-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.master-item:hover {
+  background: var(--bg);
+}
+
+.master-item-on {
+  background: var(--lavender-100) !important;
+}
+
+.master-item-name {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.master-item-sub {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.master-item-stage {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.detail-area {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.detail-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.jdp {
+  padding: 14px 16px;
+}
+
+.jdp-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+
+.jdp-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.jdp-name {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.jdp-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.jdp-section {
+  margin-bottom: 18px;
+}
+
+.jdp-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.jdp-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+
+.jdp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jdp-full {
+  grid-column: 1 / -1;
+}
+
+.jdp-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.jdp-input {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+.jdp-textarea {
+  resize: vertical;
+}
+
+.jdp-quick-links {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.jdp-quick-links a {
+  color: var(--link);
+}
+
+.mutedtext {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.customer-project-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+}
+
+.customer-project-row > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.customer-project-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 @media (max-width: 900px) {
   .pipeline-detail-panel.panel-is-open {
     width: 100vw;
@@ -735,5 +969,13 @@ a {
 
   .sidebar-label {
     display: none;
+  }
+
+  .master-list {
+    width: 240px;
+  }
+
+  .jdp-2col {
+    grid-template-columns: 1fr;
   }
 }

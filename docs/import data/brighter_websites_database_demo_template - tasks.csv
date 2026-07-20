@@ -1,0 +1,36 @@
+id,project_id,asset_id,customer_id,task_title,notes,,,status,task_type
+,,re-energy.com.au,,ALTC cluster placeholder → approved map,"Replace CLAUDE.md placeholders with 3 clusters (off-grid, on-grid+storage, EV). Client review of commercial priorities.",,,Not Started,Task
+,,paalgrant.com,,Approve site rebuild IA & page list,"Lock portfolio, methodology, package, and consult pathway pages before Breakdance build. Carmen/Paal sign-off.",,,Completed,Task
+,,brighterwebsites.com.au,,Audit Performance on top 10 Traffic pages,"Verify cluster, topic, intent, purpose render in page output and match wp-admin values. Fix any drift on service and framework pages.",,,In Progress,Internal Task
+,,100up.com.au,,Backfill meta titles on top 20 GSC pages,Query-aligned rewrites for pages with impressions but weak CTR. No publish until Fred confirms technical claims.,,,Not Started,Task
+,,oneteamqld.com.au,,Build 90-day ALTC publish schedule from existing roadmap,"Pull priorities from 06-ALTC-Roadmap-Implementation.md. Sequence couples pillar first, then wellbeing cluster.",,,Not Started,Internal Task
+,,paalgrant.com,,Build methodology hub page (Intelligent Design ALTC 1),Explains how Paal reads sites — not generic design tips. Foundation for educational content layer.,,,Not Started,Task
+,,coastalnativesupply.com.au,,Client sign-off on brand voice + ICP brief,coastal-native-supply/CLAUDE.md sections still empty. Blocks brand-facing copy and meta work.,,,Blocked,Task
+,,coastalnativesupply.com.au,,Complete staging rebuild core templates,"Shop, category, product, cart, checkout on hsb.bweb1.com.au. Mobile performance gate before client review.",,,In Progress,Internal Task
+,,re-energy.com.au,,Confirm GA4 property + GSC verification status,Property ID 437032136 in config — verify live tracking and Search Console access before rebuild handover.,,,Not Started,Internal Task
+,,coastalnativesupply.com.au,,Document rebrand cutover redirect map,horseshoebendnursery.com.au → staging deploy → coastalnativesupply.com.au. Include indexation and canonical rules per phase.,,,Not Started,Internal Task
+,,100up.com.au,,Draft & publish Off-Grid System project pagers,"First cluster pillar from ALTC 1. SCOS-classify, internal links to service pathway and Fred contact. Client review before publish.",,,Completed,Task
+,,re-energy.com.au,,Draft off-grid service page architecture,Separate off-grid vs on-grid vs EV pathways. Ballarat-local qualifiers on every commercial endpoint.,,,Not Started,Task
+,,100up.com.au,,Finalise topic taxonomy in WordPress,Map 203-topic-taxonomy.md to scos_content_cluster and scos_topic terms. Blocker for classified content sprint.,,,In Progress,Internal Task
+,,guerillasteelstables.com.au,,July / August Social Post Calendar,,,,Not Started,Internal Task
+,,oneteamqld.com.au,,First meta-fill and content classification.,MCP confirmed; SCOS not live. Required before meta-fill and ALTC content classification.,,,Not Started,Agent Task
+,,guerillasteelstables.com.au,,First meta-fill and content classification.,MCP confirmed; SCOS not live. Required before meta-fill and ALTC content classification.,,,Not Started,Agent Task
+,,brighterwebsites.com.au,,Publish case study page,"Turn BW site + methodology into a proof asset with measurable outcomes (traffic, leads, or AI visibility). Links to framework docs and SCOS showcase.",,,In Progress,Task
+,,guerillasteelstables.com.au,,Publish Stable Build Preparation pillar refresh,,,,Not Started,Task
+,,re-energy.com.au,,Run content inventory + traffic signals baseline,re-energy/CLAUDE.md flags both missing. Prerequisite for ALTC mapping and rebuild scope.,,,Not Started,Internal Task
+,,100up.com.au,,Run technical SEO baseline fixes batch 1,"Indexation flags, thin/duplicate URLs, missing meta on high-impression GSC pages. Target pages with traffic decline first.",,,In Progress,Internal Task
+,,paalgrant.com,,SCOS taxonomy setup for 3 ALTC clusters,"Intelligent Design, Complex Sites, Longevity — map to wp terms before content or rebuild go-live.",,,Not Started,Internal Task
+,,paalgrant.com,,Select 2 portfolio projects for constraint-led case studies,"Rooftop, slope, or poor-soil examples with before/after and design rationale. Paal provides project notes.",,,Completed,Task
+,,guerillasteelstables.com.au,,Set up Stripe Connection ,,,,In Progress,Internal Task
+,,brighterwebsites.com.au,,Wire quiz → consult pathway GA4 events,"Confirm pathway_quiz_complete, consult click, and form submit events fire on production. Needed before claiming lead-pathway deliverable is done.",,,Not Started,Internal Task
+,,coastalnativesupply.com.au,,WooCommerce catalogue migration smoke test,"Import sample product batch; verify images, categories, and checkout on staging. Flag inventory workflow issues early.",,,Not Started,Internal Task
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+11,,,,,,,,,

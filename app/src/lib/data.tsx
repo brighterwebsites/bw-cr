@@ -8,9 +8,13 @@ import {
 } from 'react'
 import type { ReactNode } from 'react'
 import { supabase } from './supabaseClient'
+import type { TablesInsert, TablesUpdate } from '../types/database.types'
 import type { Customer, Project, ProjectStage, Task } from './pipeline'
 
 export type { Customer, Project, ProjectStage, Task }
+
+type CustomerInsert = TablesInsert<'customers'>
+type CustomerUpdate = TablesUpdate<'customers'>
 
 interface DataState {
   loading: boolean
@@ -21,6 +25,8 @@ interface DataState {
   tasks: Task[]
   refresh: () => Promise<void>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
+  updateCustomer: (id: number, patch: CustomerUpdate) => Promise<Customer>
+  createCustomer: (row: CustomerInsert) => Promise<Customer>
 }
 
 const DataContext = createContext<DataState | null>(null)
@@ -78,6 +84,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [refresh],
   )
 
+  const updateCustomer = useCallback(
+    async (id: number, patch: CustomerUpdate) => {
+      const { data, error: updErr } = await supabase
+        .from('customers')
+        .update(patch)
+        .eq('id', id)
+        .select('*')
+        .single()
+      if (updErr) throw new Error(updErr.message)
+      await refresh()
+      return data
+    },
+    [refresh],
+  )
+
+  const createCustomer = useCallback(
+    async (row: CustomerInsert) => {
+      const { data, error: insErr } = await supabase
+        .from('customers')
+        .insert(row)
+        .select('*')
+        .single()
+      if (insErr) throw new Error(insErr.message)
+      await refresh()
+      return data
+    },
+    [refresh],
+  )
+
   const value = useMemo(
     () => ({
       loading,
@@ -88,8 +123,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       tasks,
       refresh,
       updateProject,
+      updateCustomer,
+      createCustomer,
     }),
-    [loading, error, customers, projects, stages, tasks, refresh, updateProject],
+    [
+      loading,
+      error,
+      customers,
+      projects,
+      stages,
+      tasks,
+      refresh,
+      updateProject,
+      updateCustomer,
+      createCustomer,
+    ],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
