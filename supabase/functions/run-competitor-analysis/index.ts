@@ -152,6 +152,42 @@ async function dfsPost(path: string, body: unknown[]) {
   return json
 }
 
+function normalizeDomain(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  if (trimmed.includes('://') || trimmed.includes('/')) {
+    return extractDomain(trimmed)
+  }
+  return trimmed.replace(/^www\./i, '').toLowerCase()
+}
+
+async function fetchOneDomainRankOverview(
+  domain: string,
+  locationCode: number,
+  languageCode: string,
+): Promise<(ReturnType<typeof organicFromOverview> & { paid_traffic: number | null }) | null> {
+  const json = await dfsPost('dataforseo_labs/google/domain_rank_overview/live', [
+    {
+      target: domain,
+      location_code: locationCode,
+      language_code: languageCode,
+    },
+  ])
+
+  for (const task of Array.isArray(json.tasks) ? json.tasks : []) {
+    if (task?.status_code !== 20000) continue
+    const items = task?.result?.[0]?.items ?? []
+    for (const item of items) {
+      const itemDomain = normalizeDomain(String(item?.target ?? task?.data?.target ?? domain))
+      if (itemDomain !== domain) continue
+      const organic = item?.metrics?.organic as OrganicMetrics | undefined
+      const paid = item?.metrics?.paid as { etv?: number } | undefined
+      return { ...organicFromOverview(organic), paid_traffic: num(paid?.etv) }
+    }
+  }
+  return null
+}
+
 async function fetchDomainRankOverviews(
   domains: string[],
   locationCode: number,
@@ -160,28 +196,41 @@ async function fetchDomainRankOverviews(
   const out = new Map<string, ReturnType<typeof organicFromOverview> & { paid_traffic: number | null }>()
   if (domains.length === 0) return out
 
-  const json = await dfsPost(
-    'dataforseo_labs/google/domain_rank_overview/live',
-    domains.map((target) => ({
-      target,
-      location_code: locationCode,
-      language_code: languageCode,
+  const results = await Promise.all(
+    domains.map(async (domain) => ({
+      domain,
+      metrics: await fetchOneDomainRankOverview(domain, locationCode, languageCode),
     })),
   )
 
-  const tasks = Array.isArray(json.tasks) ? json.tasks : []
-  for (let i = 0; i < tasks.length; i++) {
-    const domain = domains[i]
-    if (!domain) continue
-    const task = tasks[i]
-    if (task?.status_code !== 20000) continue
-    const item = task?.result?.[0]?.items?.[0]
-    const organic = item?.metrics?.organic as OrganicMetrics | undefined
-    const paid = item?.metrics?.paid as { etv?: number } | undefined
-    const metrics = organicFromOverview(organic)
-    out.set(domain, { ...metrics, paid_traffic: num(paid?.etv) })
+  for (const { domain, metrics } of results) {
+    if (metrics) out.set(domain, metrics)
   }
   return out
+}
+
+async function fetchOneBacklinkSummary(domain: string): Promise<{
+  domain_rank: number | null
+  backlinks: number | null
+  referring_domains: number | null
+  spam_score: number | null
+} | null> {
+  const json = await dfsPost('backlinks/summary/live', [{ target: domain }])
+
+  for (const task of Array.isArray(json.tasks) ? json.tasks : []) {
+    if (task?.status_code !== 20000) continue
+    for (const item of task?.result ?? []) {
+      const itemDomain = normalizeDomain(String(item?.target ?? task?.data?.target ?? domain))
+      if (itemDomain !== domain) continue
+      return {
+        domain_rank: num(item?.rank),
+        backlinks: num(item?.backlinks),
+        referring_domains: num(item?.referring_domains),
+        spam_score: num(item?.backlinks_spam_score ?? item?.spam_score),
+      }
+    }
+  }
+  return null
 }
 
 async function fetchBacklinkSummaries(domains: string[]): Promise<
@@ -193,24 +242,15 @@ async function fetchBacklinkSummaries(domains: string[]): Promise<
   >()
   if (domains.length === 0) return out
 
-  const json = await dfsPost(
-    'backlinks/summary/live',
-    domains.map((target) => ({ target })),
+  const results = await Promise.all(
+    domains.map(async (domain) => ({
+      domain,
+      metrics: await fetchOneBacklinkSummary(domain),
+    })),
   )
 
-  const tasks = Array.isArray(json.tasks) ? json.tasks : []
-  for (let i = 0; i < tasks.length; i++) {
-    const domain = domains[i]
-    if (!domain) continue
-    const task = tasks[i]
-    if (task?.status_code !== 20000) continue
-    const item = task?.result?.[0]
-    out.set(domain, {
-      domain_rank: num(item?.rank),
-      backlinks: num(item?.backlinks),
-      referring_domains: num(item?.referring_domains),
-      spam_score: num(item?.backlinks_spam_score ?? item?.spam_score),
-    })
+  for (const { domain, metrics } of results) {
+    if (metrics) out.set(domain, metrics)
   }
   return out
 }
