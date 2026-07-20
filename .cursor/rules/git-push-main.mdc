@@ -1,0 +1,36 @@
+---
+description: Auto-commit and push to main when a requested CRM feature is done
+alwaysApply: true
+---
+
+# Git: commit + push after completed work
+
+This project overrides the default "don't commit/push unless asked" habit.
+
+## When to commit and push (no extra ask)
+
+After finishing a **requested** feature or fix for this CRM:
+
+1. Ensure the change is ready (`npm run build` in `app/` when UI/TS changed).
+2. **Commit** with a concise message (follow the normal git safety protocol: status, diff, log, no secrets).
+3. **Immediately push** to `origin` on the current branch (usually `main`):
+
+```bash
+git push -u origin HEAD
+```
+
+4. Do **not** wait for a separate "commit" or "push" message.
+
+## When to skip
+
+- User says not to (e.g. "don't commit", "commit but don't push", "local only").
+- Nothing meaningful to commit (no relevant changes).
+- Build fails — fix first, then commit/push.
+- Secrets / env files — never commit those.
+
+## Constraints
+
+- Push only when already on `main` (or the branch the user named).
+- Never force-push to `main` unless the user explicitly requests it.
+- If push fails (auth, rejected non-fast-forward), report the error and stop — do not force or rewrite history.
+- Still follow normal commit hygiene (review diff, good message, no `--no-verify` unless asked).
