@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useData } from '../lib/data'
+import { useAppNav } from '../lib/nav'
 import { fmtDate } from '../lib/format'
 import { isClosed, stageOrdinal, stageTheme } from '../lib/pipeline'
 import ProjectDetailPanel from '../features/projects/ProjectDetailPanel'
@@ -10,8 +11,16 @@ const STALE_DAYS = 21
 
 export default function PipelinePage() {
   const { projects, customers, stages, loading, error } = useData()
+  const { pipelineIntent, consumePipelineIntent } = useAppNav()
   const [filter, setFilter] = useState<Filter>('active')
   const [openId, setOpenId] = useState<number | 'new' | null>(null)
+
+  useEffect(() => {
+    if (!pipelineIntent) return
+    setOpenId(pipelineIntent.projectId)
+    setFilter('all')
+    consumePipelineIntent()
+  }, [pipelineIntent, consumePipelineIntent])
 
   const columns = stages
 

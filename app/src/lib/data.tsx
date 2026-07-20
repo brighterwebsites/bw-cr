@@ -9,9 +9,16 @@ import {
 import type { ReactNode } from 'react'
 import { supabase } from './supabaseClient'
 import type { TablesInsert, TablesUpdate } from '../types/database.types'
-import type { Asset, Customer, Project, ProjectStage, Task } from './pipeline'
+import type {
+  Asset,
+  Customer,
+  Project,
+  ProjectDeliverable,
+  ProjectStage,
+  Task,
+} from './pipeline'
 
-export type { Asset, Customer, Project, ProjectStage, Task }
+export type { Asset, Customer, Project, ProjectDeliverable, ProjectStage, Task }
 
 type CustomerInsert = TablesInsert<'customers'>
 type CustomerUpdate = TablesUpdate<'customers'>
@@ -19,6 +26,8 @@ type AssetInsert = TablesInsert<'assets'>
 type AssetUpdate = TablesUpdate<'assets'>
 type TaskInsert = TablesInsert<'tasks'>
 type TaskUpdate = TablesUpdate<'tasks'>
+type DeliverableInsert = TablesInsert<'project_deliverables'>
+type DeliverableUpdate = TablesUpdate<'project_deliverables'>
 
 interface DataState {
   loading: boolean
@@ -28,6 +37,7 @@ interface DataState {
   assets: Asset[]
   stages: ProjectStage[]
   tasks: Task[]
+  deliverables: ProjectDeliverable[]
   refresh: () => Promise<void>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
   createProject: (row: TablesInsert<'projects'>) => Promise<Project>
@@ -37,6 +47,9 @@ interface DataState {
   createAsset: (row: AssetInsert) => Promise<Asset>
   updateTask: (id: number, patch: TaskUpdate) => Promise<Task>
   createTask: (row: TaskInsert) => Promise<Task>
+  createDeliverable: (row: DeliverableInsert) => Promise<ProjectDeliverable>
+  updateDeliverable: (id: number, patch: DeliverableUpdate) => Promise<ProjectDeliverable>
+  deleteDeliverable: (id: number) => Promise<void>
 }
 
 const DataContext = createContext<DataState | null>(null)
@@ -49,15 +62,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [assets, setAssets] = useState<Asset[]>([])
   const [stages, setStages] = useState<ProjectStage[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [deliverables, setDeliverables] = useState<ProjectDeliverable[]>([])
 
   const refresh = useCallback(async () => {
     setError(null)
-    const [custRes, projRes, assetRes, stageRes, taskRes] = await Promise.all([
+    const [custRes, projRes, assetRes, stageRes, taskRes, delRes] = await Promise.all([
       supabase.from('customers').select('*').order('business_name'),
       supabase.from('projects').select('*').order('updated_at', { ascending: false }),
       supabase.from('assets').select('*').order('name'),
       supabase.from('project_stages').select('*').order('ordinal'),
       supabase.from('tasks').select('*').order('due_on', { ascending: true, nullsFirst: false }),
+      supabase.from('project_deliverables').select('*').order('id'),
     ])
     const err =
       custRes.error?.message ??
@@ -65,6 +80,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       assetRes.error?.message ??
       stageRes.error?.message ??
       taskRes.error?.message ??
+      delRes.error?.message ??
       null
     if (err) {
       setError(err)
@@ -75,6 +91,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setAssets(assetRes.data ?? [])
     setStages(stageRes.data ?? [])
     setTasks(taskRes.data ?? [])
+    setDeliverables(delRes.data ?? [])
   }, [])
 
   useEffect(() => {
@@ -199,6 +216,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [refresh],
   )
 
+  const createDeliverable = useCallback(
+    async (row: DeliverableInsert) => {
+      const { data, error: insErr } = await supabase
+        .from('project_deliverables')
+        .insert(row)
+        .select('*')
+        .single()
+      if (insErr) throw new Error(insErr.message)
+      await refresh()
+      return data
+    },
+    [refresh],
+  )
+
+  const updateDeliverable = useCallback(
+    async (id: number, patch: DeliverableUpdate) => {
+      const { data, error: updErr } = await supabase
+        .from('project_deliverables')
+        .update(patch)
+        .eq('id', id)
+        .select('*')
+        .single()
+      if (updErr) throw new Error(updErr.message)
+      await refresh()
+      return data
+    },
+    [refresh],
+  )
+
+  const deleteDeliverable = useCallback(
+    async (id: number) => {
+      const { error: delErr } = await supabase.from('project_deliverables').delete().eq('id', id)
+      if (delErr) throw new Error(delErr.message)
+      await refresh()
+    },
+    [refresh],
+  )
+
   const value = useMemo(
     () => ({
       loading,
@@ -208,6 +263,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       assets,
       stages,
       tasks,
+      deliverables,
       refresh,
       updateProject,
       createProject,
@@ -217,6 +273,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createAsset,
       updateTask,
       createTask,
+      createDeliverable,
+      updateDeliverable,
+      deleteDeliverable,
     }),
     [
       loading,
@@ -226,6 +285,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       assets,
       stages,
       tasks,
+      deliverables,
       refresh,
       updateProject,
       createProject,
@@ -235,6 +295,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createAsset,
       updateTask,
       createTask,
+      createDeliverable,
+      updateDeliverable,
+      deleteDeliverable,
     ],
   )
 

@@ -10,6 +10,7 @@ Nav: Pipeline
 
 ## Panel (edit)
 - All project fields editable + Save
+- **Deliverables** CRUD table (title, type, status)
 - **Tasks** mini-table: Status (inline) · Title · Due badge — **Open in Tasks** pre-fills search with project name
 - **Assets** mini-table: Name · URL · Open URL · Open record (Assets page)
 

@@ -1016,6 +1016,85 @@ a {
   font-weight: 700;
 }
 
+.customer-project-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.customer-project-card .customer-project-row {
+  background: transparent;
+  border: none;
+  padding: 0 0 10px;
+  margin-bottom: 0;
+}
+
+.stage-chip-btn {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.deliverables-block {
+  margin-top: 4px;
+}
+
+.deliverables-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.deliverables-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.deliverables-add-row .jdp-input {
+  flex: 1;
+  min-width: 140px;
+}
+
+.deliverables-empty {
+  padding: 8px 0 4px;
+}
+
+.del-status {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--gray-200);
+}
+
+.del-status-planned {
+  background: var(--sky-100);
+  color: var(--navy-700);
+}
+
+.del-status-in_progress {
+  background: var(--indigo-100);
+  color: var(--indigo-600);
+}
+
+.del-status-done {
+  background: var(--indigo-100);
+  color: var(--indigo-600);
+}
+
+.del-status-dropped {
+  background: var(--gray-200);
+  color: var(--muted);
+}
+
 /* ── tasks table (stock-style) ───────────────────────── */
 .filter-row {
   display: flex;

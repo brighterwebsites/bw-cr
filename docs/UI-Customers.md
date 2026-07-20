@@ -17,23 +17,14 @@ Nav: CRM → Customers
 
 ## Layout
 
-Master–detail (same shell pattern as 100up Customers).
+Master–detail.
 
 ### Left column
-- Search (business name, phone, email, location)
-- **+ New customer**
-- Vertical list: business name, contact line, lifecycle chip, open project count
+- Search · **+ New customer** · list with lifecycle + project count
 
-### Main section
-- Empty state: “Select a customer” or create form
-- **Customer details** (editable)
-  - Business name, lifecycle
-  - Contact first / last
-  - Phone `[tel:]` `[sms:]` · Email `[mailto:]`
-  - Contact method
-  - Location, address, website
-  - Notes
-- **Save** / cancel on create
-- **Projects** list for this customer (read-only links for now — open in pipeline later)
+### Main — customer card
+- **Customer details** (editable) + Save
+- **Projects** — card per project: name, stage chip (opens Pipeline), nested **Deliverables** CRUD table
+- **Assets** — Name · URL · Open URL · Open record
 
-Keep it simple: no deep project editor from this page yet.
+Future customer portal = read-only version of this card.

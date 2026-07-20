@@ -139,6 +139,32 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['assets']['Insert']>
         Relationships: []
       }
+      project_deliverables: {
+        Row: {
+          id: number
+          project_id: number
+          title: string
+          type: Database['public']['Enums']['deliverable_type']
+          status: Database['public']['Enums']['deliverable_status']
+          stage: number | null
+          step: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          project_id: number
+          title: string
+          type: Database['public']['Enums']['deliverable_type']
+          id?: number
+          status?: Database['public']['Enums']['deliverable_status']
+          stage?: number | null
+          step?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['project_deliverables']['Insert']>
+        Relationships: []
+      }
       tasks: {
         Row: {
           id: number
@@ -180,6 +206,8 @@ export type Database = {
       customer_lifecycle: 'lead' | 'customer' | 'inactive'
       asset_type: 'website' | 'staging' | 'other'
       connection_status: 'unknown' | 'connected' | 'error' | 'disconnected'
+      deliverable_type: 'goal_target' | 'collection_of_work' | 'guaranteed_outcome'
+      deliverable_status: 'planned' | 'in_progress' | 'done' | 'dropped'
       task_status: 'not_started' | 'in_progress' | 'blocked' | 'completed'
       task_type: 'task' | 'agent_task' | 'internal'
     }

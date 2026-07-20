@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useData } from '../lib/data'
-import type { Customer, Project } from '../lib/pipeline'
+import { useAppNav } from '../lib/nav'
+import type { Asset, Customer, Project } from '../lib/pipeline'
 import { isClosed, stageLabel, stageTheme } from '../lib/pipeline'
+import DeliverablesTable from '../features/projects/DeliverablesTable'
 
 type Lifecycle = Customer['lifecycle']
 
@@ -59,7 +61,7 @@ function websiteHref(url: string) {
 }
 
 export default function CustomersPage() {
-  const { customers, projects, stages, loading, error, updateCustomer, createCustomer } =
+  const { customers, projects, assets, stages, loading, error, updateCustomer, createCustomer } =
     useData()
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -90,6 +92,16 @@ export default function CustomersPage() {
     }
     return map
   }, [projects])
+
+  const assetsByCustomer = useMemo(() => {
+    const map = new Map<number, Asset[]>()
+    for (const a of assets) {
+      const list = map.get(a.customer_id) ?? []
+      list.push(a)
+      map.set(a.customer_id, list)
+    }
+    return map
+  }, [assets])
 
   const selected = customers.find((c) => c.id === selectedId) ?? null
 
@@ -166,6 +178,7 @@ export default function CustomersPage() {
             mode="create"
             initial={createDraft}
             projects={[]}
+            assets={[]}
             stages={stages}
             onCancel={() => {
               setCreating(false)
@@ -187,6 +200,7 @@ export default function CustomersPage() {
             customerId={selected.id}
             initial={formFromCustomer(selected)}
             projects={projectsByCustomer.get(selected.id) ?? []}
+            assets={assetsByCustomer.get(selected.id) ?? []}
             stages={stages}
             onSave={async (form) => {
               await updateCustomer(selected.id, form)
@@ -203,6 +217,7 @@ function CustomerDetail({
   customerId,
   initial,
   projects,
+  assets,
   stages,
   onSave,
   onCreate,
@@ -212,17 +227,18 @@ function CustomerDetail({
   customerId?: number
   initial: CustomerForm
   projects: Project[]
+  assets: Asset[]
   stages: ReturnType<typeof useData>['stages']
   onSave?: (form: CustomerForm) => Promise<void>
   onCreate?: (form: CustomerForm) => Promise<void>
   onCancel?: () => void
 }) {
+  const { openProjectInPipeline, openAssetRecord } = useAppNav()
   const [form, setForm] = useState(initial)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
 
-  // Remount via key on customer change; only re-sync after external refresh (same id).
   useEffect(() => {
     setForm(initial)
     setErr(null)
@@ -411,33 +427,90 @@ function CustomerDetail({
       </div>
 
       {mode === 'edit' && (
-        <div className="jdp-section">
-          <div className="jdp-section-title">Projects ({projects.length})</div>
-          {projects.length === 0 && <div className="mutedtext">No projects yet.</div>}
-          {projects.map((p) => {
-            const closed = isClosed(p.stage)
-            const theme = stageTheme(p.stage)
-            return (
-              <div key={p.id} className="customer-project-row">
-                <div>
-                  <div className="customer-project-name">{p.name}</div>
-                  {p.system_description && (
-                    <div className="mutedtext">{p.system_description}</div>
-                  )}
+        <>
+          <div className="jdp-section">
+            <div className="jdp-section-title">Projects ({projects.length})</div>
+            {projects.length === 0 && <div className="mutedtext">No projects yet.</div>}
+            {projects.map((p) => {
+              const closed = isClosed(p.stage)
+              const theme = stageTheme(p.stage)
+              return (
+                <div key={p.id} className="customer-project-card">
+                  <div className="customer-project-row">
+                    <div>
+                      <div className="customer-project-name">{p.name}</div>
+                      {p.system_description && (
+                        <div className="mutedtext">{p.system_description}</div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="stage-chip stage-chip-btn"
+                      style={{
+                        background: closed ? 'var(--gray-200)' : theme.light,
+                        color: closed ? 'var(--muted)' : theme.text,
+                      }}
+                      onClick={() => openProjectInPipeline(p.id)}
+                      title="Open in pipeline"
+                    >
+                      {closed ? 'Closed' : stageLabel(p.stage, p.step, stages)}
+                    </button>
+                  </div>
+                  <DeliverablesTable projectId={p.id} />
                 </div>
-                <span
-                  className="stage-chip"
-                  style={{
-                    background: closed ? 'var(--gray-200)' : theme.light,
-                    color: closed ? 'var(--muted)' : theme.text,
-                  }}
-                >
-                  {closed ? 'Closed' : stageLabel(p.stage, p.step, stages)}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+
+          <div className="jdp-section">
+            <div className="jdp-section-title">Assets ({assets.length})</div>
+            {assets.length === 0 ? (
+              <div className="mutedtext">No assets for this customer.</div>
+            ) : (
+              <table className="table panel-mini-table">
+                <thead>
+                  <tr>
+                    <th className="th-left">Name</th>
+                    <th className="th-left">URL</th>
+                    <th>Open URL</th>
+                    <th>Record</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assets.map((a) => (
+                    <tr key={a.id}>
+                      <td className="td-left">{a.name || '—'}</td>
+                      <td className="td-left mutedtext">{a.asset_url || '—'}</td>
+                      <td>
+                        {a.asset_url ? (
+                          <a
+                            className="btn-link"
+                            href={websiteHref(a.asset_url)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open
+                          </a>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => openAssetRecord(a.id)}
+                        >
+                          Open record
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
       )}
     </div>
   )

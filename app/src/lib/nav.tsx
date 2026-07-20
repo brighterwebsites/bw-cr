@@ -11,12 +11,15 @@ export type Page = 'pipeline' | 'customers' | 'tasks' | 'assets'
 
 export type TasksIntent = {
   search: string
-  /** Defaults to all so project-name search is not hidden by Current. */
   filter?: 'all' | 'current'
 }
 
 export type AssetsIntent = {
   assetId: number
+}
+
+export type PipelineIntent = {
+  projectId: number
 }
 
 type AppNavValue = {
@@ -28,6 +31,9 @@ type AppNavValue = {
   assetsIntent: AssetsIntent | null
   consumeAssetsIntent: () => void
   openAssetRecord: (assetId: number) => void
+  pipelineIntent: PipelineIntent | null
+  consumePipelineIntent: () => void
+  openProjectInPipeline: (projectId: number) => void
 }
 
 const AppNavContext = createContext<AppNavValue | null>(null)
@@ -36,9 +42,11 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
   const [page, setPage] = useState<Page>('pipeline')
   const [tasksIntent, setTasksIntent] = useState<TasksIntent | null>(null)
   const [assetsIntent, setAssetsIntent] = useState<AssetsIntent | null>(null)
+  const [pipelineIntent, setPipelineIntent] = useState<PipelineIntent | null>(null)
 
   const consumeTasksIntent = useCallback(() => setTasksIntent(null), [])
   const consumeAssetsIntent = useCallback(() => setAssetsIntent(null), [])
+  const consumePipelineIntent = useCallback(() => setPipelineIntent(null), [])
 
   const openTasksForProject = useCallback((projectName: string) => {
     setTasksIntent({ search: projectName, filter: 'all' })
@@ -48,6 +56,11 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
   const openAssetRecord = useCallback((assetId: number) => {
     setAssetsIntent({ assetId })
     setPage('assets')
+  }, [])
+
+  const openProjectInPipeline = useCallback((projectId: number) => {
+    setPipelineIntent({ projectId })
+    setPage('pipeline')
   }, [])
 
   const value = useMemo(
@@ -60,6 +73,9 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
       assetsIntent,
       consumeAssetsIntent,
       openAssetRecord,
+      pipelineIntent,
+      consumePipelineIntent,
+      openProjectInPipeline,
     }),
     [
       page,
@@ -69,6 +85,9 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
       assetsIntent,
       consumeAssetsIntent,
       openAssetRecord,
+      pipelineIntent,
+      consumePipelineIntent,
+      openProjectInPipeline,
     ],
   )
 

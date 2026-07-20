@@ -4,6 +4,7 @@ import { useAppNav } from '../../lib/nav'
 import { fmtDate } from '../../lib/format'
 import { stageLabel, stageTheme } from '../../lib/pipeline'
 import type { Project, Task } from '../../lib/pipeline'
+import DeliverablesTable from './DeliverablesTable'
 
 type ProjectForm = {
   name: string
@@ -460,6 +461,11 @@ export default function ProjectDetailPanel({
 
       {projectId !== 'new' && (
         <>
+          <div className="jdp-section">
+            <div className="jdp-section-title">Deliverables</div>
+            <DeliverablesTable projectId={projectId} />
+          </div>
+
           <div className="jdp-section">
             <div className="jdp-section-title-row">
               <div className="jdp-section-title" style={{ marginBottom: 0 }}>

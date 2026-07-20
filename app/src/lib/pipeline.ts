@@ -5,6 +5,7 @@ export type Project = Tables<'projects'>
 export type Customer = Tables<'customers'>
 export type Asset = Tables<'assets'>
 export type Task = Tables<'tasks'>
+export type ProjectDeliverable = Tables<'project_deliverables'>
 
 export type StageTheme = {
   color: string
