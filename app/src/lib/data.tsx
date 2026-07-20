@@ -313,6 +313,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           type: 'target',
           business_name: input.asset_name,
           url: input.asset_url,
+          location: '',
+          notes: '',
         },
         ...input.competitors.map((c) => ({
           asset_id: input.asset_id,
@@ -320,7 +322,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           type: 'competitor' as const,
           business_name: c.business_name,
           url: c.url,
-          location: c.location,
+          location: c.location ?? '',
+          notes: '',
         })),
       ]
       const { error: snapErr } = await supabase.from('competitor_snapshots').insert(snapshots)
