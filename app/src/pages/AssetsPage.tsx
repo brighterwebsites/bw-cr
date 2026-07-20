@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useData } from '../lib/data'
+import { useAppNav } from '../lib/nav'
 import type { Asset, Customer, Project } from '../lib/pipeline'
 
 type AssetType = Asset['asset_type']
@@ -45,10 +46,19 @@ function customerName(customers: Customer[], id: number) {
 
 export default function AssetsPage() {
   const { assets, customers, projects, loading, error, updateAsset, createAsset } = useData()
+  const { assetsIntent, consumeAssetsIntent } = useAppNav()
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
   const [createDraft, setCreateDraft] = useState<AssetForm | null>(null)
+
+  useEffect(() => {
+    if (!assetsIntent) return
+    setCreating(false)
+    setCreateDraft(null)
+    setSelectedId(assetsIntent.assetId)
+    consumeAssetsIntent()
+  }, [assetsIntent, consumeAssetsIntent])
 
   const customerById = useMemo(() => {
     const map = new Map<number, Customer>()

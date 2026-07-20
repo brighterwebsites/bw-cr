@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useData } from '../lib/data'
+import { useAppNav } from '../lib/nav'
 import { fmtDate } from '../lib/format'
 import type { Task } from '../lib/pipeline'
 import TaskDetailPanel from '../features/tasks/TaskDetailPanel'
@@ -61,9 +62,18 @@ function dueTone(t: Task, today: string): 'none' | 'overdue' | 'today' | 'on_tra
 
 export default function TasksPage() {
   const { tasks, projects, assets, loading, error, updateTask } = useData()
+  const { tasksIntent, consumeTasksIntent } = useAppNav()
   const [filter, setFilter] = useState<Filter>('current')
   const [search, setSearch] = useState('')
   const [openId, setOpenId] = useState<number | 'new' | null>(null)
+
+  useEffect(() => {
+    if (!tasksIntent) return
+    setSearch(tasksIntent.search)
+    setFilter(tasksIntent.filter ?? 'all')
+    setOpenId(null)
+    consumeTasksIntent()
+  }, [tasksIntent, consumeTasksIntent])
 
   const today = todayIso()
   const weekEnd = endOfWeekIso(today)

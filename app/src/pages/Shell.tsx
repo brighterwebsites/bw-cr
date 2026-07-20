@@ -1,24 +1,25 @@
 import { useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { DataProvider } from '../lib/data'
+import { AppNavProvider, useAppNav, type Page } from '../lib/nav'
 import PipelinePage from './PipelinePage'
 import CustomersPage from './CustomersPage'
 import AssetsPage from './AssetsPage'
 import TasksPage from './TasksPage'
 
-type Page = 'pipeline' | 'customers' | 'tasks' | 'assets'
-
 export default function Shell() {
   return (
     <DataProvider>
-      <ShellInner />
+      <AppNavProvider>
+        <ShellInner />
+      </AppNavProvider>
     </DataProvider>
   )
 }
 
 function ShellInner() {
   const { session, signOut } = useAuth()
-  const [page, setPage] = useState<Page>('pipeline')
+  const { page, setPage } = useAppNav()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   function NavItem({ p, icon, label }: { p: Page; icon: string; label: string }) {
@@ -53,7 +54,12 @@ function ShellInner() {
         </div>
         <div className="header-right">
           <span className="nav-user">{session?.user.email}</span>
-          <button type="button" className="btn btn-gray" style={{ fontSize: 12 }} onClick={() => void signOut()}>
+          <button
+            type="button"
+            className="btn btn-gray"
+            style={{ fontSize: 12 }}
+            onClick={() => void signOut()}
+          >
             Sign out
           </button>
         </div>

@@ -30,6 +30,7 @@ interface DataState {
   tasks: Task[]
   refresh: () => Promise<void>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
+  createProject: (row: TablesInsert<'projects'>) => Promise<Project>
   updateCustomer: (id: number, patch: CustomerUpdate) => Promise<Customer>
   createCustomer: (row: CustomerInsert) => Promise<Customer>
   updateAsset: (id: number, patch: AssetUpdate) => Promise<Asset>
@@ -93,6 +94,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { error: updErr } = await supabase.from('projects').update(patch).eq('id', id)
       if (updErr) throw new Error(updErr.message)
       await refresh()
+    },
+    [refresh],
+  )
+
+  const createProject = useCallback(
+    async (row: TablesInsert<'projects'>) => {
+      const { data, error: insErr } = await supabase
+        .from('projects')
+        .insert(row)
+        .select('*')
+        .single()
+      if (insErr) throw new Error(insErr.message)
+      await refresh()
+      return data
     },
     [refresh],
   )
@@ -195,6 +210,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       tasks,
       refresh,
       updateProject,
+      createProject,
       updateCustomer,
       createCustomer,
       updateAsset,
@@ -212,6 +228,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       tasks,
       refresh,
       updateProject,
+      createProject,
       updateCustomer,
       createCustomer,
       updateAsset,

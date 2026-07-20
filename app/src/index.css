@@ -1193,6 +1193,106 @@ a {
   margin-bottom: 8px;
 }
 
+.jdp-section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.seg-toggle {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.seg-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border: none;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.seg-btn + .seg-btn {
+  border-left: 1px solid var(--line);
+}
+
+.seg-btn-on {
+  background: var(--lavender-100);
+  color: var(--ink);
+}
+
+.panel-mini-table {
+  margin-top: 8px;
+}
+
+.panel-mini-table th,
+.panel-mini-table td {
+  padding: 10px 12px;
+}
+
+.panel-mini-table .p-row,
+.panel-mini-table tr {
+  cursor: default;
+}
+
+.jdp-accordion-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.jdp-accordion-toggle.is-open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.jdp-accordion-chevron {
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.jdp-accordion-body {
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 12px;
+  background: var(--card);
+}
+
+.integration-asset-block + .integration-asset-block {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.integration-asset-name {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
 @media (max-width: 900px) {
   .pipeline-detail-panel.panel-is-open {
     width: 100vw;

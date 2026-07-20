@@ -11,7 +11,7 @@ const STALE_DAYS = 21
 export default function PipelinePage() {
   const { projects, customers, stages, loading, error } = useData()
   const [filter, setFilter] = useState<Filter>('active')
-  const [openId, setOpenId] = useState<number | null>(null)
+  const [openId, setOpenId] = useState<number | 'new' | null>(null)
 
   const columns = stages
 
@@ -61,6 +61,12 @@ export default function PipelinePage() {
 
   return (
     <div className="pipeline-page">
+      <div className="filter-row">
+        <button type="button" className="btn btn-primary" onClick={() => setOpenId('new')}>
+          + New project
+        </button>
+      </div>
+
       <div className="stat-bar">
         {statItems.map(({ key, label, n, color }) => (
           <button
@@ -102,7 +108,9 @@ export default function PipelinePage() {
           {filtered.length === 0 ? (
             <div className="pipeline-empty">
               <p>No projects match this filter.</p>
-              <p className="muted">Seed customers and projects in Supabase to populate the board.</p>
+              <button type="button" className="btn btn-primary" onClick={() => setOpenId('new')}>
+                + New project
+              </button>
             </div>
           ) : (
             <table className="pipeline-table">
@@ -145,7 +153,9 @@ export default function PipelinePage() {
                         onClick={() => setOpenId(selected ? null : p.id)}
                       >
                         <div className="p-job-name">{p.name}</div>
-                        <div className="p-job-loc">{cust?.business_name ?? `Customer #${p.customer_id}`}</div>
+                        <div className="p-job-loc">
+                          {cust?.business_name ?? `Customer #${p.customer_id}`}
+                        </div>
                         {p.system_description && (
                           <div className="p-job-desc">{p.system_description}</div>
                         )}
@@ -190,7 +200,11 @@ export default function PipelinePage() {
 
         <div className={`pipeline-detail-panel ${openId !== null ? 'panel-is-open' : ''}`}>
           {openId !== null && (
-            <ProjectDetailPanel projectId={openId} onClose={() => setOpenId(null)} />
+            <ProjectDetailPanel
+              projectId={openId}
+              onClose={() => setOpenId(null)}
+              onCreated={(id) => setOpenId(id)}
+            />
           )}
         </div>
       </div>
