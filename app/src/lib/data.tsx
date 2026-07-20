@@ -17,6 +17,8 @@ type CustomerInsert = TablesInsert<'customers'>
 type CustomerUpdate = TablesUpdate<'customers'>
 type AssetInsert = TablesInsert<'assets'>
 type AssetUpdate = TablesUpdate<'assets'>
+type TaskInsert = TablesInsert<'tasks'>
+type TaskUpdate = TablesUpdate<'tasks'>
 
 interface DataState {
   loading: boolean
@@ -32,6 +34,8 @@ interface DataState {
   createCustomer: (row: CustomerInsert) => Promise<Customer>
   updateAsset: (id: number, patch: AssetUpdate) => Promise<Asset>
   createAsset: (row: AssetInsert) => Promise<Asset>
+  updateTask: (id: number, patch: TaskUpdate) => Promise<Task>
+  createTask: (row: TaskInsert) => Promise<Task>
 }
 
 const DataContext = createContext<DataState | null>(null)
@@ -151,6 +155,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [refresh],
   )
 
+  const updateTask = useCallback(
+    async (id: number, patch: TaskUpdate) => {
+      const { data, error: updErr } = await supabase
+        .from('tasks')
+        .update(patch)
+        .eq('id', id)
+        .select('*')
+        .single()
+      if (updErr) throw new Error(updErr.message)
+      await refresh()
+      return data
+    },
+    [refresh],
+  )
+
+  const createTask = useCallback(
+    async (row: TaskInsert) => {
+      const { data, error: insErr } = await supabase
+        .from('tasks')
+        .insert(row)
+        .select('*')
+        .single()
+      if (insErr) throw new Error(insErr.message)
+      await refresh()
+      return data
+    },
+    [refresh],
+  )
+
   const value = useMemo(
     () => ({
       loading,
@@ -166,6 +199,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createCustomer,
       updateAsset,
       createAsset,
+      updateTask,
+      createTask,
     }),
     [
       loading,
@@ -181,6 +216,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createCustomer,
       updateAsset,
       createAsset,
+      updateTask,
+      createTask,
     ],
   )
 

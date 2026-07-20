@@ -4,7 +4,7 @@ import { DataProvider } from '../lib/data'
 import PipelinePage from './PipelinePage'
 import CustomersPage from './CustomersPage'
 import AssetsPage from './AssetsPage'
-import StubPage from './StubPage'
+import TasksPage from './TasksPage'
 
 type Page = 'pipeline' | 'customers' | 'tasks' | 'assets'
 
@@ -73,9 +73,7 @@ function ShellInner() {
         <main className="app-main">
           {page === 'pipeline' && <PipelinePage />}
           {page === 'customers' && <CustomersPage />}
-          {page === 'tasks' && (
-            <StubPage icon="✓" title="Tasks" note="Task list and create form — next up." />
-          )}
+          {page === 'tasks' && <TasksPage />}
           {page === 'assets' && <AssetsPage />}
         </main>
       </div>
