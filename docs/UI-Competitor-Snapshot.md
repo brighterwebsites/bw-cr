@@ -8,7 +8,7 @@ Nav: CRM → Assets → asset detail → **Competitor snapshots** accordion
 |---|---|---|
 | 1 | Schema: `competitor_analysis_runs`, `run_id` on snapshots, `managed_website` asset type | Done |
 | 2 | UI shell: form, queue `pending` runs, history + detail panel | Done |
-| 3 | Supabase Edge Function + live DataForSEO bulk pull | Not started |
+| 3 | Supabase Edge Function + live DataForSEO bulk pull | Done |
 
 ## Data model
 
@@ -25,9 +25,9 @@ Nav: CRM → Assets → asset detail → **Competitor snapshots** accordion
 ## UI (Assets detail)
 
 1. **New analysis** — target URL (read-only from asset), search market preset, 2–4 competitor rows
-2. **Queue analysis** — creates `pending` run + placeholder snapshot rows (no API call yet)
+2. **Run analysis** — creates run + snapshots, then invokes `run-competitor-analysis` Edge Function
 3. **Run history** — table: date, market, competitor count, status
-4. **Run detail panel** — snapshot comparison table (metrics show `—` until Phase 3)
+4. **Run detail panel** — snapshot comparison table; **Run now** / **Re-run** for pending, failed, or done runs
 
 ## Asset types
 
@@ -63,3 +63,14 @@ supabase secrets set \
 | `DATAFORSEO_PASSWORD` | DataForSEO API password |
 
 Default search market: **Australia (`2036`) + `en`**.
+
+## Edge Function
+
+`run-competitor-analysis` — invoked from the app with `{ run_id }`.
+
+**DataForSEO calls (per run):**
+- `domain_rank_overview` — organic traffic, position buckets, keyword counts
+- `backlinks/summary` — domain rank, backlinks, referring domains, spam score
+- `domain_intersection` — keyword gap vs target (competitors only)
+
+Deploy: `supabase functions deploy run-competitor-analysis --project-ref uvgzchkejlrqrgiorvwf`

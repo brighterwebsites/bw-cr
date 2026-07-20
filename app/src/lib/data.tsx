@@ -75,6 +75,7 @@ interface DataState {
   deleteDeliverable: (id: number) => Promise<void>
   fetchCompetitorRunsForAsset: (assetId: number) => Promise<CompetitorRunWithSnapshots[]>
   createCompetitorRun: (input: CreateCompetitorRunInput) => Promise<CompetitorRunWithSnapshots>
+  executeCompetitorRun: (runId: number) => Promise<void>
 }
 
 const DataContext = createContext<DataState | null>(null)
@@ -334,6 +335,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const executeCompetitorRun = useCallback(async (runId: number) => {
+    const { data, error: fnErr } = await supabase.functions.invoke('run-competitor-analysis', {
+      body: { run_id: runId },
+    })
+    if (fnErr) throw new Error(fnErr.message)
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(String(data.error))
+    }
+  }, [])
+
   const value = useMemo(
     () => ({
       loading,
@@ -358,6 +369,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteDeliverable,
       fetchCompetitorRunsForAsset,
       createCompetitorRun,
+      executeCompetitorRun,
     }),
     [
       loading,
@@ -382,6 +394,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteDeliverable,
       fetchCompetitorRunsForAsset,
       createCompetitorRun,
+      executeCompetitorRun,
     ],
   )
 

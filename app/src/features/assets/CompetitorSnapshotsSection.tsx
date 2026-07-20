@@ -36,7 +36,7 @@ export function CompetitorSnapshotsSection({
   asset: Asset
   onRunPanelChange?: (open: boolean) => void
 }) {
-  const { fetchCompetitorRunsForAsset, createCompetitorRun } = useData()
+  const { fetchCompetitorRunsForAsset, createCompetitorRun, executeCompetitorRun } = useData()
   const [open, setOpen] = useState(false)
   const [runs, setRuns] = useState<CompetitorRunWithSnapshots[]>([])
   const [loadingRuns, setLoadingRuns] = useState(false)
@@ -49,6 +49,7 @@ export function CompetitorSnapshotsSection({
     emptyCompetitor(),
   ])
   const [submitting, setSubmitting] = useState(false)
+  const [executingRunId, setExecutingRunId] = useState<number | null>(null)
   const [formErr, setFormErr] = useState<string | null>(null)
 
   const loadRuns = useCallback(async () => {
@@ -87,7 +88,22 @@ export function CompetitorSnapshotsSection({
     setCompetitors((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)))
   }
 
-  async function handleQueue() {
+  async function runAnalysis(runId: number) {
+    setExecutingRunId(runId)
+    setRunErr(null)
+    try {
+      await executeCompetitorRun(runId)
+      await loadRuns()
+      setSelectedRunId(runId)
+    } catch (e) {
+      setRunErr(e instanceof Error ? e.message : 'Analysis failed')
+      await loadRuns()
+    } finally {
+      setExecutingRunId(null)
+    }
+  }
+
+  async function handleRunNew() {
     const filled = competitors.filter((c) => c.business_name.trim() || c.url.trim())
     if (filled.length === 0) {
       setFormErr('Add at least one competitor (name or URL).')
@@ -120,15 +136,16 @@ export function CompetitorSnapshotsSection({
         search_language_code: market.lang,
         competitors: filled,
       })
-      await loadRuns()
-      setSelectedRunId(run.id)
       setCompetitors([emptyCompetitor(), emptyCompetitor()])
+      await runAnalysis(run.id)
     } catch (e) {
-      setFormErr(e instanceof Error ? e.message : 'Failed to queue run')
+      setFormErr(e instanceof Error ? e.message : 'Failed to run analysis')
     } finally {
       setSubmitting(false)
     }
   }
+
+  const isBusy = submitting || executingRunId != null
 
   return (
     <>
@@ -143,12 +160,7 @@ export function CompetitorSnapshotsSection({
         </button>
         {open && (
           <div className="jdp-accordion-body">
-            <p className="competitor-phase-note">
-              Phase 2: queue runs and view history. Live DataForSEO pull lands in Phase 3 (Edge
-              Function).
-            </p>
-
-            <div className="jdp-section-title" style={{ marginTop: 12 }}>
+            <div className="jdp-section-title" style={{ marginTop: 0 }}>
               New analysis
             </div>
             <div className="jdp-2col">
@@ -223,10 +235,14 @@ export function CompetitorSnapshotsSection({
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={submitting}
-                onClick={() => void handleQueue()}
+                disabled={isBusy}
+                onClick={() => void handleRunNew()}
               >
-                {submitting ? 'Queuing…' : 'Queue analysis'}
+                {submitting
+                  ? 'Creating…'
+                  : executingRunId != null
+                    ? 'Pulling DataForSEO…'
+                    : 'Run analysis'}
               </button>
             </div>
 
@@ -295,8 +311,24 @@ export function CompetitorSnapshotsSection({
                 {formatDate(selectedRun.created_at)} · {selectedRun.search_location_name} (
                 {selectedRun.search_language_code})
               </div>
-              <div style={{ marginTop: 6 }}>
+              <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <RunStatusChip status={selectedRun.status} />
+                {(selectedRun.status === 'pending' ||
+                  selectedRun.status === 'failed' ||
+                  selectedRun.status === 'done') && (
+                  <button
+                    type="button"
+                    className="btn btn-gray btn-sm"
+                    disabled={isBusy}
+                    onClick={() => void runAnalysis(selectedRun.id)}
+                  >
+                    {executingRunId === selectedRun.id
+                      ? 'Pulling…'
+                      : selectedRun.status === 'done'
+                        ? 'Re-run'
+                        : 'Run now'}
+                  </button>
+                )}
                 {selectedRun.error_message && (
                   <span className="login-error" style={{ marginLeft: 8 }}>
                     {selectedRun.error_message}
@@ -314,6 +346,7 @@ export function CompetitorSnapshotsSection({
                   <th>Domain rank</th>
                   <th>Organic traffic</th>
                   <th>Top 10 kw</th>
+                  <th>Kw gaps</th>
                   <th>Backlinks</th>
                 </tr>
               </thead>
@@ -336,6 +369,7 @@ export function CompetitorSnapshotsSection({
                       <td>{fmtNum(s.domain_rank)}</td>
                       <td>{fmtNum(s.organic_traffic)}</td>
                       <td>{fmtNum(s.top_10_keywords)}</td>
+                      <td>{fmtNum(s.keyword_gaps)}</td>
                       <td>{fmtNum(s.backlinks)}</td>
                     </tr>
                   ))}
