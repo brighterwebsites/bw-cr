@@ -29,6 +29,27 @@ function fmtNum(n: number | null | undefined) {
   return n.toLocaleString('en-AU')
 }
 
+function competitorsFromRun(run: CompetitorRunWithSnapshots): CompetitorInput[] {
+  const raw = run.competitor_inputs
+  if (Array.isArray(raw) && raw.length > 0) {
+    return raw.map((c) => {
+      const row = c as Record<string, unknown>
+      return {
+        business_name: String(row.business_name ?? ''),
+        url: String(row.url ?? ''),
+        location: String(row.location ?? ''),
+      }
+    })
+  }
+  return run.competitor_snapshots
+    .filter((s) => s.type === 'competitor')
+    .map((s) => ({
+      business_name: s.business_name,
+      url: s.url,
+      location: s.location ?? '',
+    }))
+}
+
 export function CompetitorSnapshotsSection({
   asset,
   onRunPanelChange,
@@ -86,6 +107,36 @@ export function CompetitorSnapshotsSection({
 
   function setCompetitor(idx: number, patch: Partial<CompetitorInput>) {
     setCompetitors((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)))
+  }
+
+  async function runAgain(source: CompetitorRunWithSnapshots) {
+    const competitors = competitorsFromRun(source)
+    if (competitors.length === 0) {
+      setRunErr('No competitors found on this run to copy.')
+      return
+    }
+    setExecutingRunId(source.id)
+    setRunErr(null)
+    try {
+      const run = await createCompetitorRun({
+        asset_id: asset.id,
+        asset_name: asset.name || 'Target',
+        asset_url: asset.asset_url,
+        search_location_code: source.search_location_code,
+        search_location_name: source.search_location_name,
+        search_language_code: source.search_language_code,
+        competitors,
+      })
+      setSelectedRunId(run.id)
+      setExecutingRunId(run.id)
+      await executeCompetitorRun(run.id)
+      await loadRuns()
+    } catch (e) {
+      setRunErr(e instanceof Error ? e.message : 'Analysis failed')
+      await loadRuns()
+    } finally {
+      setExecutingRunId(null)
+    }
   }
 
   async function runAnalysis(runId: number) {
@@ -313,20 +364,24 @@ export function CompetitorSnapshotsSection({
               </div>
               <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <RunStatusChip status={selectedRun.status} />
-                {(selectedRun.status === 'pending' ||
-                  selectedRun.status === 'failed' ||
-                  selectedRun.status === 'done') && (
+                {(selectedRun.status === 'pending' || selectedRun.status === 'failed') && (
                   <button
                     type="button"
                     className="btn btn-gray btn-sm"
                     disabled={isBusy}
                     onClick={() => void runAnalysis(selectedRun.id)}
                   >
-                    {executingRunId === selectedRun.id
-                      ? 'Pulling…'
-                      : selectedRun.status === 'done'
-                        ? 'Re-run'
-                        : 'Run now'}
+                    {executingRunId === selectedRun.id ? 'Pulling…' : 'Run now'}
+                  </button>
+                )}
+                {selectedRun.status === 'done' && (
+                  <button
+                    type="button"
+                    className="btn btn-gray btn-sm"
+                    disabled={isBusy}
+                    onClick={() => void runAgain(selectedRun)}
+                  >
+                    {executingRunId === selectedRun.id ? 'Pulling…' : 'Run again'}
                   </button>
                 )}
                 {selectedRun.error_message && (

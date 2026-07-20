@@ -27,7 +27,9 @@ Nav: CRM → Assets → asset detail → **Competitor snapshots** accordion
 1. **New analysis** — target URL (read-only from asset), search market preset, 2–4 competitor rows
 2. **Run analysis** — creates run + snapshots, then invokes `run-competitor-analysis` Edge Function
 3. **Run history** — table: date, market, competitor count, status
-4. **Run detail panel** — snapshot comparison table; **Run now** / **Re-run** for pending, failed, or done runs
+4. **Run detail panel** — snapshot comparison table
+   - **Run now** — retry a `pending` / `failed` run (same run id, overwrites snapshot metrics)
+   - **Run again** — clone same competitors + market into a **new run** (keeps history for before/after)
 
 ## Asset types
 
