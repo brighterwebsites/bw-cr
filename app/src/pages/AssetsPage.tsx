@@ -219,11 +219,13 @@ function AssetDetail({
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
+  const [integrationsOpen, setIntegrationsOpen] = useState(false)
 
   useEffect(() => {
     setForm(initial)
     setErr(null)
     setOk(false)
+    setIntegrationsOpen(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync on assetId / mode only
   }, [assetId, mode])
 
@@ -396,25 +398,27 @@ function AssetDetail({
 
       {mode === 'edit' && asset && (
         <div className="jdp-section">
-          <div className="jdp-section-title">Integrations</div>
-          <div className="jdp-2col">
-            <DisplayField label="Health score" value={asset.health_score ?? '—'} />
-            <DisplayField
-              label="GSC"
-              value={<StatusChip status={asset.gsc_status} />}
-            />
-            <DisplayField
-              label="GA4"
-              value={<StatusChip status={asset.ga4_status} />}
-            />
-            <DisplayField
-              label="WP CLI"
-              value={<StatusChip status={asset.wp_cli_status} />}
-            />
-            <DisplayField label="Hermes profile" value={asset.hermes_profile || '—'} />
-            <DisplayField label="Telegram topic" value={asset.telegram_topic || '—'} />
-            <DisplayField label="Workspace" value={asset.workspace || '—'} />
-          </div>
+          <button
+            type="button"
+            className={`jdp-accordion-toggle ${integrationsOpen ? 'is-open' : ''}`}
+            onClick={() => setIntegrationsOpen((o) => !o)}
+          >
+            <span>Integrations</span>
+            <span className="jdp-accordion-chevron">{integrationsOpen ? '▾' : '▸'}</span>
+          </button>
+          {integrationsOpen && (
+            <div className="jdp-accordion-body">
+              <div className="jdp-2col">
+                <DisplayField label="Health score" value={asset.health_score ?? '—'} />
+                <DisplayField label="GSC" value={<StatusChip status={asset.gsc_status} />} />
+                <DisplayField label="GA4" value={<StatusChip status={asset.ga4_status} />} />
+                <DisplayField label="WP CLI" value={<StatusChip status={asset.wp_cli_status} />} />
+                <DisplayField label="Hermes profile" value={asset.hermes_profile || '—'} />
+                <DisplayField label="Telegram topic" value={asset.telegram_topic || '—'} />
+                <DisplayField label="Workspace" value={asset.workspace || '—'} />
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

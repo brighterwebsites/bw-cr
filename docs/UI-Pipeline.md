@@ -12,7 +12,6 @@ Nav: Pipeline
 - All project fields editable + Save
 - **Tasks** mini-table: Status (inline) · Title · Due badge — **Open in Tasks** pre-fills search with project name
 - **Assets** mini-table: Name · URL · Open URL · Open record (Assets page)
-- **Integrations** accordion (end): display-only connection fields from assets with this as current project
 
 ## Board
 Stage/step columns from `project_stages`; click row opens panel. Slide-in width: `min(50%, 960px)`.

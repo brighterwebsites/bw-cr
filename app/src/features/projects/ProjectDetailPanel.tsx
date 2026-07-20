@@ -110,7 +110,6 @@ export default function ProjectDetailPanel({
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
-  const [integrationsOpen, setIntegrationsOpen] = useState(false)
 
   useEffect(() => {
     if (projectId === 'new') {
@@ -122,7 +121,6 @@ export default function ProjectDetailPanel({
     }
     setErr(null)
     setOk(false)
-    setIntegrationsOpen(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
@@ -577,74 +575,6 @@ export default function ProjectDetailPanel({
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
-
-          <div className="jdp-section">
-            <button
-              type="button"
-              className={`jdp-accordion-toggle ${integrationsOpen ? 'is-open' : ''}`}
-              onClick={() => setIntegrationsOpen((o) => !o)}
-            >
-              <span>Integrations</span>
-              <span className="jdp-accordion-chevron">{integrationsOpen ? '▾' : '▸'}</span>
-            </button>
-            {integrationsOpen && (
-              <div className="jdp-accordion-body">
-                {projectAssets.length === 0 ? (
-                  <div className="mutedtext">
-                    Link an asset (set current project) to see connection status here.
-                  </div>
-                ) : (
-                  projectAssets.map((a) => (
-                    <div key={a.id} className="integration-asset-block">
-                      <div className="integration-asset-name">{a.name || a.asset_url || `Asset #${a.id}`}</div>
-                      <div className="jdp-2col">
-                        <div className="jdp-field">
-                          <span className="jdp-label">Health</span>
-                          <div className="jdp-readonly">{a.health_score ?? '—'}</div>
-                        </div>
-                        <div className="jdp-field">
-                          <span className="jdp-label">GSC</span>
-                          <div className="jdp-readonly">
-                            <span className={`conn-status conn-status-${a.gsc_status}`}>
-                              {a.gsc_status}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="jdp-field">
-                          <span className="jdp-label">GA4</span>
-                          <div className="jdp-readonly">
-                            <span className={`conn-status conn-status-${a.ga4_status}`}>
-                              {a.ga4_status}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="jdp-field">
-                          <span className="jdp-label">WP CLI</span>
-                          <div className="jdp-readonly">
-                            <span className={`conn-status conn-status-${a.wp_cli_status}`}>
-                              {a.wp_cli_status}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="jdp-field">
-                          <span className="jdp-label">Hermes</span>
-                          <div className="jdp-readonly">{a.hermes_profile || '—'}</div>
-                        </div>
-                        <div className="jdp-field">
-                          <span className="jdp-label">Telegram</span>
-                          <div className="jdp-readonly">{a.telegram_topic || '—'}</div>
-                        </div>
-                        <div className="jdp-field">
-                          <span className="jdp-label">Workspace</span>
-                          <div className="jdp-readonly">{a.workspace || '—'}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
             )}
           </div>
         </>

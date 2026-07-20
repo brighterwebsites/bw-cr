@@ -31,6 +31,7 @@ Master–detail (same pattern as Customers).
 - **Asset details** (editable): name, type, URL, customer, **current project**, conversion event
 - **Integrations** (read-only): health score, GSC / GA4 / WP CLI status, Hermes / Telegram / workspace
 - **Save** / cancel on create
+- **Integrations** accordion at end (display-only): health, GSC / GA4 / WP CLI, Hermes / Telegram / workspace
 
 No connection wiring in v1 UI — statuses and Hermes fields are display-only until integrations land.
 
