@@ -21,7 +21,15 @@ Env vars:
 |---|---|
 | `npm run dev` | Local dev server |
 | `npm run build` | Production build → `dist/` |
+| `npm run deploy` | `wrangler deploy` (assets from `dist/`) |
 | `npm run lint` | oxlint |
+
+Cloudflare Workers Builds: root directory `app`, build `npm run build`, deploy `npm run deploy`.
+
+Set these as build env vars in the Cloudflare dashboard (Vite bakes them in at build time):
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
 ## Structure
 
