@@ -11,6 +11,8 @@ import {
   pageMetricsMap,
 } from '../../lib/seo'
 
+type SortKey = 'impressions' | 'clicks' | 'ctr' | 'avg_position'
+
 export function SeoPagesView() {
   const {
     assets,
@@ -27,6 +29,7 @@ export function SeoPagesView() {
   const [syncing, setSyncing] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null)
 
   const monitored = useMemo(
     () => assets.filter(isSeoMonitoredAsset).sort((a, b) => a.name.localeCompare(b.name)),
@@ -53,14 +56,39 @@ export function SeoPagesView() {
           p.cluster_slug.toLowerCase().includes(q),
       )
     }
+
+    if (!sort) {
+      return [...rows].sort((a, b) => {
+        const assetCmp = (assetNameById.get(a.asset_id) ?? '').localeCompare(
+          assetNameById.get(b.asset_id) ?? '',
+        )
+        if (assetCmp !== 0) return assetCmp
+        return a.url_path.localeCompare(b.url_path)
+      })
+    }
+
+    const metricKey = sort.key
     return [...rows].sort((a, b) => {
-      const assetCmp = (assetNameById.get(a.asset_id) ?? '').localeCompare(
-        assetNameById.get(b.asset_id) ?? '',
-      )
-      if (assetCmp !== 0) return assetCmp
-      return a.url_path.localeCompare(b.url_path)
+      const av = Number(metricsByPage.get(a.id)?.[metricKey] ?? -1)
+      const bv = Number(metricsByPage.get(b.id)?.[metricKey] ?? -1)
+      return sort.dir === 'asc' ? av - bv : bv - av
     })
-  }, [assetPages, filter, search, assetNameById])
+  }, [assetPages, filter, search, assetNameById, sort, metricsByPage])
+
+  function toggleSort(key: SortKey) {
+    setSort((prev) => {
+      if (!prev || prev.key !== key) {
+        // Position: lower is better, so default ascending; others default descending.
+        return { key, dir: key === 'avg_position' ? 'asc' : 'desc' }
+      }
+      return { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+    })
+  }
+
+  function sortIndicator(key: SortKey) {
+    if (!sort || sort.key !== key) return ''
+    return sort.dir === 'asc' ? ' ▲' : ' ▼'
+  }
 
   const connectedCount = useMemo(
     () =>
@@ -157,10 +185,18 @@ export function SeoPagesView() {
                 <th>Asset</th>
                 <th>Path</th>
                 <th>Title</th>
-                <th>Impr.</th>
-                <th>Clicks</th>
-                <th>CTR</th>
-                <th>Pos.</th>
+                <th className="seo-th-sortable" onClick={() => toggleSort('impressions')}>
+                  Impr.{sortIndicator('impressions')}
+                </th>
+                <th className="seo-th-sortable" onClick={() => toggleSort('clicks')}>
+                  Clicks{sortIndicator('clicks')}
+                </th>
+                <th className="seo-th-sortable" onClick={() => toggleSort('ctr')}>
+                  CTR{sortIndicator('ctr')}
+                </th>
+                <th className="seo-th-sortable" onClick={() => toggleSort('avg_position')}>
+                  Pos.{sortIndicator('avg_position')}
+                </th>
                 <th>Pri.</th>
                 <th>Next step</th>
                 <th>Index</th>

@@ -1842,6 +1842,16 @@ a {
   background: var(--surface-2, #f8faf9);
 }
 
+.seo-th-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.seo-th-sortable:hover {
+  color: var(--text, #1f2933);
+}
+
 .seo-pages-path {
   font-family: ui-monospace, monospace;
   font-size: 12px;
