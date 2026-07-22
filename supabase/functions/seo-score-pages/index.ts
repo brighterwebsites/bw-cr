@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
-import { detectOpportunities, type PageMetricsInput } from '../_shared/seo-rules.ts'
+import { computeSiteThresholds, detectOpportunities, type PageMetricsInput } from '../_shared/seo-rules.ts'
 
 type ScoreResult = {
   asset_id: number
@@ -41,6 +41,10 @@ async function scoreAsset(
     (metricsRows ?? []).map((m) => [m.asset_page_id, m]),
   )
 
+  const thresholds = computeSiteThresholds(
+    (metricsRows ?? []).map((m) => Number(m.impressions ?? 0)),
+  )
+
   let created = 0
   let updated = 0
 
@@ -58,7 +62,7 @@ async function scoreAsset(
       avg_position: Number(row.avg_position ?? 0),
     }
 
-    for (const opp of detectOpportunities(input)) {
+    for (const opp of detectOpportunities(input, thresholds)) {
       const { data: existing } = await service
         .from('seo_opportunities')
         .select('id')
