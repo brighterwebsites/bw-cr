@@ -483,7 +483,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const saveWordPressConfig = useCallback(
     async (assetId: number, patch: { siteUrl: string; wpUsername: string }) => {
-      const siteUrl = patch.siteUrl.trim().replace(/\/+$/, '')
+      const siteUrl = patch.siteUrl.trim().replace(/\/+$/, '').replace(/^(?!https?:\/\/)/i, 'https://')
       const wpUsername = patch.wpUsername.trim()
       const { data: existing, error: getErr } = await supabase
         .from('asset_connections')

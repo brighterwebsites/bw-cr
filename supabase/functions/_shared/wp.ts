@@ -40,7 +40,19 @@ export type WpPostRow = {
 }
 
 export function normalizeSiteUrl(url: string): string {
-  return url.trim().replace(/\/+$/, '')
+  const trimmed = url.trim().replace(/\/+$/, '')
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
+/** WP REST collection slug — post type `post` → route `posts`, not `post`. */
+export function restBaseForPostType(postType: string): string {
+  const known: Record<string, string> = {
+    post: 'posts',
+    page: 'pages',
+  }
+  return known[postType] ?? postType
 }
 
 export function urlPathFromLink(link: string): string {
@@ -98,7 +110,8 @@ export async function fetchAllPublishedPosts(
   let totalPages = 1
 
   while (page <= totalPages) {
-    const url = new URL(`${base}/wp-json/wp/v2/${postType}`)
+    const restBase = restBaseForPostType(postType)
+    const url = new URL(`${base}/wp-json/wp/v2/${restBase}`)
     url.searchParams.set('status', 'publish')
     url.searchParams.set('per_page', '100')
     url.searchParams.set('page', String(page))
@@ -112,7 +125,7 @@ export async function fetchAllPublishedPosts(
       const json = await res.json().catch(() => ({}))
       throw new Error(
         (json as { message?: string }).message ??
-          `Failed to fetch ${postType} (HTTP ${res.status})`,
+          `Failed to fetch ${restBase} (HTTP ${res.status})`,
       )
     }
     totalPages = Number(res.headers.get('X-WP-TotalPages') ?? '1')
