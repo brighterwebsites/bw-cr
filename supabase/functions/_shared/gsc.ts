@@ -142,3 +142,107 @@ export function pickSiteForDomain(sites: string[], assetUrl: string, preferred?:
   const match = sites.find((s) => siteMatchesDomain(s, domain))
   return match ?? null
 }
+
+export function urlPathFromPageUrl(pageUrl: string): string {
+  try {
+    const path = new URL(pageUrl).pathname
+    if (path === '/') return '/'
+    return path.endsWith('/') ? path : `${path}/`
+  } catch {
+    return pageUrl
+  }
+}
+
+function pathLookupKeys(path: string): string[] {
+  const normalized = path.startsWith('/') ? path : `/${path}`
+  const withSlash = normalized.endsWith('/') ? normalized : `${normalized}/`
+  const noSlash = withSlash.replace(/\/+$/, '') || '/'
+  return [...new Set([withSlash, noSlash, normalized])]
+}
+
+type GscRow = {
+  keys?: string[]
+  clicks?: number
+  impressions?: number
+  ctr?: number
+  position?: number
+}
+
+function rowToMetrics(row: GscRow | undefined): GscSiteMetrics {
+  if (!row) return { clicks: 0, impressions: 0, ctr: 0, position: 0 }
+  return {
+    clicks: row.clicks ?? 0,
+    impressions: row.impressions ?? 0,
+    ctr: (row.ctr ?? 0) * 100,
+    position: row.position ?? 0,
+  }
+}
+
+/** Pull all page rows from GSC for a date window — caller filters to managed pages. */
+export async function queryAllPageMetrics(
+  accessToken: string,
+  siteUrl: string,
+  startDate: string,
+  endDate: string,
+): Promise<Map<string, GscSiteMetrics>> {
+  const encoded = encodeURIComponent(siteUrl)
+  const map = new Map<string, GscSiteMetrics>()
+  let startRow = 0
+  const rowLimit = 25000
+
+  while (true) {
+    const res = await fetch(
+      `https://www.googleapis.com/webmasters/v3/sites/${encoded}/searchAnalytics/query`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          dimensions: ['page'],
+          rowLimit,
+          startRow,
+        }),
+      },
+    )
+    const json = await res.json()
+    if (!res.ok) {
+      throw new Error(json.error?.message ?? 'GSC page metrics query failed')
+    }
+    const rows = (json.rows ?? []) as GscRow[]
+    for (const row of rows) {
+      const pageUrl = row.keys?.[0]
+      if (!pageUrl) continue
+      const path = urlPathFromPageUrl(pageUrl)
+      for (const key of pathLookupKeys(path)) {
+        map.set(key, rowToMetrics(row))
+      }
+    }
+    if (rows.length < rowLimit) break
+    startRow += rowLimit
+  }
+
+  return map
+}
+
+export function lookupPageMetrics(
+  map: Map<string, GscSiteMetrics>,
+  urlPath: string,
+  canonicalUrl?: string,
+): GscSiteMetrics {
+  for (const key of pathLookupKeys(urlPath)) {
+    const hit = map.get(key)
+    if (hit) return hit
+  }
+  if (canonicalUrl) {
+    const path = urlPathFromPageUrl(canonicalUrl)
+    for (const key of pathLookupKeys(path)) {
+      const hit = map.get(key)
+      if (hit) return hit
+    }
+  }
+  return { clicks: 0, impressions: 0, ctr: 0, position: 0 }
+}

@@ -65,6 +65,55 @@ export type AssetPage = {
   updated_at: string
 }
 
+export type PageMetricsCurrent = {
+  id: number
+  asset_page_id: number
+  period_start: string
+  period_end: string
+  impressions: number
+  impressions_delta: number
+  clicks: number
+  clicks_delta: number
+  ctr: number
+  ctr_delta: number
+  avg_position: number
+  avg_position_delta: number
+  pulled_at: string
+}
+
+export type SeoOpportunity = {
+  id: number
+  asset_id: number
+  asset_page_id: number
+  opportunity_type: string
+  problem: string
+  priority: 'high' | 'medium' | 'low'
+  recommended_workflow: string
+  status: string
+  impressions: number
+  clicks: number
+  ctr: number
+  avg_position: number
+  impact_score: number | null
+  evidence_json: Record<string, unknown>
+  task_id: number | null
+  detected_at: string
+  resolved_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export function pageMetricsMap(
+  rows: PageMetricsCurrent[],
+): Map<number, PageMetricsCurrent> {
+  return new Map(rows.map((r) => [r.asset_page_id, r]))
+}
+
+export const OPPORTUNITY_TYPE_LABEL: Record<string, string> = {
+  low_ctr: 'Low CTR',
+  striking_distance: 'Striking distance',
+}
+
 /** Managed sites for SEO views — include website until seed uses managed_website. */
 export function isSeoMonitoredAsset(a: Asset): boolean {
   return (

@@ -1,6 +1,7 @@
 import { useAppNav, type SeoTab } from '../lib/nav'
 import { SeoPerformanceView } from '../features/seo/SeoPerformanceView'
 import { SeoPagesView } from '../features/seo/SeoPagesView'
+import { SeoOpportunitiesView } from '../features/seo/SeoOpportunitiesView'
 
 const TABS: { id: SeoTab; label: string }[] = [
   { id: 'performance', label: 'Performance' },
@@ -27,12 +28,7 @@ export default function SeoPage() {
       </nav>
       <div className="seo-tab-panel">
         {seoTab === 'performance' && <SeoPerformanceView />}
-        {seoTab === 'opportunities' && (
-          <div className="seo-stub card page-pad">
-            <h2>Opportunities</h2>
-            <p className="mutedtext">Phase B — cross-site opportunity pipeline from GSC page metrics.</p>
-          </div>
-        )}
+        {seoTab === 'opportunities' && <SeoOpportunitiesView />}
         {seoTab === 'pages' && <SeoPagesView />}
       </div>
     </div>

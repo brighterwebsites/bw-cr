@@ -2,10 +2,25 @@ import { useMemo, useState } from 'react'
 import { useData } from '../../lib/data'
 import { useAppNav } from '../../lib/nav'
 import { AssetFilterBar } from './AssetFilterBar'
-import { assetDotColor, isSeoMonitoredAsset } from '../../lib/seo'
+import {
+  assetDotColor,
+  fmtCtr,
+  fmtInt,
+  fmtRank,
+  isSeoMonitoredAsset,
+  pageMetricsMap,
+} from '../../lib/seo'
 
 export function SeoPagesView() {
-  const { assets, assetPages, loading, syncWpPages, updateAssetPagePriority } = useData()
+  const {
+    assets,
+    assetPages,
+    pageMetrics,
+    loading,
+    syncWpPages,
+    pullGscPageMetrics,
+    updateAssetPagePriority,
+  } = useData()
   const { openAssetRecord } = useAppNav()
   const [filter, setFilter] = useState<number | 'all'>('all')
   const [search, setSearch] = useState('')
@@ -22,6 +37,8 @@ export function SeoPagesView() {
     () => new Map(monitored.map((a) => [a.id, a.name])),
     [monitored],
   )
+
+  const metricsByPage = useMemo(() => pageMetricsMap(pageMetrics), [pageMetrics])
 
   const visible = useMemo(() => {
     let rows = assetPages
@@ -73,17 +90,41 @@ export function SeoPagesView() {
         <div>
           <h1 className="seo-page-title">Pages</h1>
           <p className="seo-page-sub">
-            Managed pages from WordPress — published posts only in B1. GSC metrics come next.
+            Managed pages from WordPress. GSC metrics attach on opportunity scan (managed URLs only).
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={syncing || connectedCount === 0}
-          onClick={() => void handleSync()}
-        >
-          {syncing ? 'Syncing…' : 'Sync from WordPress'}
-        </button>
+        <div className="seo-page-head-actions">
+          <button
+            type="button"
+            className="btn btn-gray"
+            disabled={syncing || connectedCount === 0}
+            onClick={() => void handleSync()}
+          >
+            {syncing ? 'Syncing…' : 'Sync from WordPress'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={syncing}
+            onClick={() =>
+              void (async () => {
+                setSyncing(true)
+                setErr(null)
+                setMsg(null)
+                try {
+                  const count = await pullGscPageMetrics(filter === 'all' ? undefined : filter)
+                  setMsg(`GSC metrics pulled for ${count} page(s)`)
+                } catch (e) {
+                  setErr(e instanceof Error ? e.message : 'GSC pull failed')
+                } finally {
+                  setSyncing(false)
+                }
+              })()
+            }
+          >
+            {syncing ? 'Working…' : 'Pull GSC metrics'}
+          </button>
+        </div>
       </div>
 
       {err && <div className="login-error seo-page-error">{err}</div>}
@@ -116,6 +157,10 @@ export function SeoPagesView() {
                 <th>Asset</th>
                 <th>Path</th>
                 <th>Title</th>
+                <th>Impr.</th>
+                <th>Clicks</th>
+                <th>CTR</th>
+                <th>Pos.</th>
                 <th>Pri.</th>
                 <th>Next step</th>
                 <th>Index</th>
@@ -124,7 +169,9 @@ export function SeoPagesView() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((p) => (
+              {visible.map((p) => {
+                const m = metricsByPage.get(p.id)
+                return (
                 <tr key={p.id}>
                   <td>
                     <button
@@ -143,6 +190,10 @@ export function SeoPagesView() {
                   </td>
                   <td className="seo-pages-path">{p.url_path}</td>
                   <td>{p.title || '—'}</td>
+                  <td>{m ? fmtInt(m.impressions) : '—'}</td>
+                  <td>{m ? fmtInt(m.clicks) : '—'}</td>
+                  <td>{m ? fmtCtr(m.ctr) : '—'}</td>
+                  <td>{m ? fmtRank(m.avg_position) : '—'}</td>
                   <td>
                     <input
                       type="checkbox"
@@ -158,7 +209,8 @@ export function SeoPagesView() {
                   <td>{p.topic_slug || '—'}</td>
                   <td>{p.cluster_slug || '—'}</td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>

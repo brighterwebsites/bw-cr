@@ -19,7 +19,13 @@ import type {
   ProjectStage,
   Task,
 } from './pipeline'
-import type { AssetConnection, AssetPage, MetricsSnapshot } from './seo'
+import type {
+  AssetConnection,
+  AssetPage,
+  MetricsSnapshot,
+  PageMetricsCurrent,
+  SeoOpportunity,
+} from './seo'
 
 export type {
   Asset,
@@ -64,6 +70,8 @@ interface DataState {
   deliverables: ProjectDeliverable[]
   assetConnections: import('./seo').AssetConnection[]
   assetPages: import('./seo').AssetPage[]
+  pageMetrics: import('./seo').PageMetricsCurrent[]
+  seoOpportunities: import('./seo').SeoOpportunity[]
   metricsSnapshots: import('./seo').MetricsSnapshot[]
   refresh: () => Promise<void>
   refreshMetrics: () => Promise<void>
@@ -83,6 +91,14 @@ interface DataState {
   ) => Promise<void>
   syncWpPages: (assetId?: number) => Promise<number>
   updateAssetPagePriority: (pageId: number, isPriority: boolean) => Promise<void>
+  runSeoScan: (assetId?: number) => Promise<{
+    pagesUpdated: number
+    oppsCreated: number
+    oppsUpdated: number
+  }>
+  pullGscPageMetrics: (assetId?: number) => Promise<number>
+  dismissSeoOpportunity: (opportunityId: number) => Promise<void>
+  promoteSeoOpportunityToTask: (opportunityId: number) => Promise<void>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
   createProject: (row: TablesInsert<'projects'>) => Promise<Project>
   updateCustomer: (id: number, patch: CustomerUpdate) => Promise<Customer>
@@ -112,6 +128,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [deliverables, setDeliverables] = useState<ProjectDeliverable[]>([])
   const [assetConnections, setAssetConnections] = useState<AssetConnection[]>([])
   const [assetPages, setAssetPages] = useState<AssetPage[]>([])
+  const [pageMetrics, setPageMetrics] = useState<PageMetricsCurrent[]>([])
+  const [seoOpportunities, setSeoOpportunities] = useState<SeoOpportunity[]>([])
   const [metricsSnapshots, setMetricsSnapshots] = useState<MetricsSnapshot[]>([])
 
   const refreshMetrics = useCallback(async () => {
@@ -138,6 +156,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .order('url_path')
     if (pErr) throw new Error(pErr.message)
     setAssetPages((data ?? []) as AssetPage[])
+  }, [])
+
+  const refreshPageMetrics = useCallback(async () => {
+    const { data, error: mErr } = await supabase
+      .from('page_metrics_current')
+      .select(
+        'id, asset_page_id, period_start, period_end, impressions, impressions_delta, clicks, clicks_delta, ctr, ctr_delta, avg_position, avg_position_delta, pulled_at',
+      )
+    if (mErr) throw new Error(mErr.message)
+    setPageMetrics((data ?? []) as PageMetricsCurrent[])
+  }, [])
+
+  const refreshSeoOpportunities = useCallback(async () => {
+    const { data, error: oErr } = await supabase
+      .from('seo_opportunities')
+      .select('*')
+      .order('impressions', { ascending: false })
+    if (oErr) throw new Error(oErr.message)
+    setSeoOpportunities((data ?? []) as SeoOpportunity[])
   }, [])
 
   const refresh = useCallback(async () => {
@@ -168,8 +205,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setStages(stageRes.data ?? [])
     setTasks(taskRes.data ?? [])
     setDeliverables(delRes.data ?? [])
-    await Promise.all([refreshMetrics(), refreshConnections(), refreshAssetPages()])
-  }, [refreshMetrics, refreshConnections, refreshAssetPages])
+    await Promise.all([
+      refreshMetrics(),
+      refreshConnections(),
+      refreshAssetPages(),
+      refreshPageMetrics(),
+      refreshSeoOpportunities(),
+    ])
+  }, [
+    refreshMetrics,
+    refreshConnections,
+    refreshAssetPages,
+    refreshPageMetrics,
+    refreshSeoOpportunities,
+  ])
 
   useEffect(() => {
     let cancelled = false
@@ -577,6 +626,119 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [refreshAssetPages],
   )
 
+  const invokeSeoFunction = useCallback(
+    async (name: string, assetId?: number) => {
+      const { data, error: fnErr } = await supabase.functions.invoke(name, {
+        body: assetId ? { asset_id: assetId } : {},
+      })
+      if (fnErr) throw new Error(fnErr.message)
+      if (data && typeof data === 'object' && 'error' in data && data.error) {
+        throw new Error(String(data.error))
+      }
+      return data as { results?: Array<Record<string, unknown>> }
+    },
+    [],
+  )
+
+  const pullGscPageMetrics = useCallback(
+    async (assetId?: number) => {
+      const pull = await invokeSeoFunction('gsc-pull-pages', assetId)
+      const pullResults = pull.results ?? []
+      const pullFailed = pullResults.filter((r) => r.ok === false)
+      if (pullFailed.length && pullResults.length === 1) {
+        throw new Error(String(pullFailed[0].error ?? 'GSC page pull failed'))
+      }
+      await refresh()
+      return pullResults.reduce((sum, r) => sum + Number(r.pages_updated ?? 0), 0)
+    },
+    [invokeSeoFunction, refresh],
+  )
+
+  const runSeoScan = useCallback(
+    async (assetId?: number) => {
+      const pull = await invokeSeoFunction('gsc-pull-pages', assetId)
+      const pullResults = pull.results ?? []
+      const pullFailed = pullResults.filter((r) => r.ok === false)
+      if (pullFailed.length && pullResults.length === 1) {
+        throw new Error(String(pullFailed[0].error ?? 'GSC page pull failed'))
+      }
+
+      const score = await invokeSeoFunction('seo-score-pages', assetId)
+      const scoreResults = score.results ?? []
+      const scoreFailed = scoreResults.filter((r) => r.ok === false)
+      if (scoreFailed.length && scoreResults.length === 1) {
+        throw new Error(String(scoreFailed[0].error ?? 'Opportunity scoring failed'))
+      }
+
+      await refresh()
+
+      return {
+        pagesUpdated: pullResults.reduce(
+          (sum, r) => sum + Number(r.pages_updated ?? 0),
+          0,
+        ),
+        oppsCreated: scoreResults.reduce((sum, r) => sum + Number(r.created ?? 0), 0),
+        oppsUpdated: scoreResults.reduce((sum, r) => sum + Number(r.updated ?? 0), 0),
+      }
+    },
+    [invokeSeoFunction, refresh],
+  )
+
+  const dismissSeoOpportunity = useCallback(
+    async (opportunityId: number) => {
+      const { error: updErr } = await supabase
+        .from('seo_opportunities')
+        .update({
+          status: 'dismissed',
+          resolved_at: new Date().toISOString(),
+        })
+        .eq('id', opportunityId)
+      if (updErr) throw new Error(updErr.message)
+      await refreshSeoOpportunities()
+    },
+    [refreshSeoOpportunities],
+  )
+
+  const promoteSeoOpportunityToTask = useCallback(
+    async (opportunityId: number) => {
+      const opp = seoOpportunities.find((o) => o.id === opportunityId)
+      if (!opp) throw new Error('Opportunity not found')
+      const page = assetPages.find((p) => p.id === opp.asset_page_id)
+      const asset = assets.find((a) => a.id === opp.asset_id)
+
+      const { data: task, error: taskErr } = await supabase
+        .from('tasks')
+        .insert({
+          title: opp.problem.slice(0, 240),
+          notes: [opp.recommended_workflow, page ? `Page: ${page.url_path}` : '']
+            .filter(Boolean)
+            .join('\n\n'),
+          asset_id: opp.asset_id,
+          customer_id: asset?.customer_id ?? null,
+          project_id: asset?.project_id ?? null,
+          page_url: page?.url_path ?? '',
+          seo_opportunity_id: opp.id,
+          status: 'not_started',
+          task_type: 'task',
+        })
+        .select('*')
+        .single()
+      if (taskErr) throw new Error(taskErr.message)
+
+      const { error: oppErr } = await supabase
+        .from('seo_opportunities')
+        .update({
+          status: 'task_created',
+          task_id: task.id,
+        })
+        .eq('id', opp.id)
+      if (oppErr) throw new Error(oppErr.message)
+
+      await refresh()
+    },
+    [seoOpportunities, assetPages, assets, refresh],
+  )
+
   const value = useMemo(
     () => ({
       loading,
@@ -589,6 +751,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deliverables,
       assetConnections,
       assetPages,
+      pageMetrics,
+      seoOpportunities,
       metricsSnapshots,
       refresh,
       refreshMetrics,
@@ -600,6 +764,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveWordPressConfig,
       syncWpPages,
       updateAssetPagePriority,
+      runSeoScan,
+      pullGscPageMetrics,
+      dismissSeoOpportunity,
+      promoteSeoOpportunityToTask,
       updateProject,
       createProject,
       updateCustomer,
@@ -626,6 +794,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deliverables,
       assetConnections,
       assetPages,
+      pageMetrics,
+      seoOpportunities,
       metricsSnapshots,
       refresh,
       refreshMetrics,
@@ -637,6 +807,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveWordPressConfig,
       syncWpPages,
       updateAssetPagePriority,
+      runSeoScan,
+      pullGscPageMetrics,
+      dismissSeoOpportunity,
+      promoteSeoOpportunityToTask,
       updateProject,
       createProject,
       updateCustomer,

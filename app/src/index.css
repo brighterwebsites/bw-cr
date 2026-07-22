@@ -1849,6 +1849,48 @@ a {
   word-break: break-all;
 }
 
+.seo-page-head-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.seo-opp-priority-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.seo-opp-table .seo-opp-problem {
+  min-width: 220px;
+  max-width: 360px;
+}
+
+.seo-opp-priority {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.seo-opp-priority-high {
+  color: #c0392b;
+}
+
+.seo-opp-priority-medium {
+  color: #d9a021;
+}
+
+.seo-opp-priority-low {
+  color: #54636b;
+}
+
+.seo-opp-actions {
+  white-space: nowrap;
+}
+
 .seo-pages-asset-link {
   display: inline-flex;
   align-items: center;

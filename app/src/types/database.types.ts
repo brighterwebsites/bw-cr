@@ -177,6 +177,8 @@ export type Database = {
           task_type: Database['public']['Enums']['task_type']
           due_on: string | null
           assigned_to: string
+          seo_opportunity_id: number | null
+          page_url: string
           version: number
           created_at: string
           updated_at: string
@@ -192,6 +194,8 @@ export type Database = {
           task_type?: Database['public']['Enums']['task_type']
           due_on?: string | null
           assigned_to?: string
+          seo_opportunity_id?: number | null
+          page_url?: string
           version?: number
           created_at?: string
           updated_at?: string
@@ -421,6 +425,98 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['asset_pages']['Insert']>
         Relationships: []
       }
+      page_metrics_current: {
+        Row: {
+          id: number
+          asset_page_id: number
+          period_start: string
+          period_end: string
+          prior_period_start: string | null
+          prior_period_end: string | null
+          impressions: number
+          impressions_delta: number
+          clicks: number
+          clicks_delta: number
+          ctr: number
+          ctr_delta: number
+          avg_position: number
+          avg_position_delta: number
+          pulled_at: string
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          asset_page_id: number
+          period_start: string
+          period_end: string
+          id?: number
+          prior_period_start?: string | null
+          prior_period_end?: string | null
+          impressions?: number
+          impressions_delta?: number
+          clicks?: number
+          clicks_delta?: number
+          ctr?: number
+          ctr_delta?: number
+          avg_position?: number
+          avg_position_delta?: number
+          pulled_at?: string
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['page_metrics_current']['Insert']>
+        Relationships: []
+      }
+      seo_opportunities: {
+        Row: {
+          id: number
+          asset_id: number
+          asset_page_id: number
+          opportunity_type: Database['public']['Enums']['seo_opportunity_type']
+          problem: string
+          priority: Database['public']['Enums']['seo_opportunity_priority']
+          recommended_workflow: string
+          status: Database['public']['Enums']['seo_opportunity_status']
+          impressions: number
+          clicks: number
+          ctr: number
+          avg_position: number
+          impact_score: number | null
+          evidence_json: Json
+          task_id: number | null
+          detected_at: string
+          resolved_at: string | null
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: number
+          asset_page_id: number
+          opportunity_type: Database['public']['Enums']['seo_opportunity_type']
+          problem: string
+          priority: Database['public']['Enums']['seo_opportunity_priority']
+          id?: number
+          recommended_workflow?: string
+          status?: Database['public']['Enums']['seo_opportunity_status']
+          impressions?: number
+          clicks?: number
+          ctr?: number
+          avg_position?: number
+          impact_score?: number | null
+          evidence_json?: Json
+          task_id?: number | null
+          detected_at?: string
+          resolved_at?: string | null
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['seo_opportunities']['Insert']>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -430,6 +526,18 @@ export type Database = {
       competitor_run_status: 'pending' | 'running' | 'done' | 'failed'
       competitor_type: 'competitor' | 'target' | 'business'
       connection_status: 'unknown' | 'connected' | 'error' | 'disconnected'
+      seo_opportunity_priority: 'high' | 'medium' | 'low'
+      seo_opportunity_status: 'open' | 'task_created' | 'complete' | 'dismissed' | 'snoozed'
+      seo_opportunity_type:
+        | 'low_ctr'
+        | 'striking_distance'
+        | 'page_speed'
+        | 'content_refresh'
+        | 'serp_gap'
+        | 'indexation'
+        | 'thin_content'
+        | 'internal_link'
+        | 'other'
       deliverable_type: 'goal_target' | 'collection_of_work' | 'guaranteed_outcome'
       deliverable_status: 'planned' | 'in_progress' | 'done' | 'dropped'
       task_status: 'not_started' | 'in_progress' | 'blocked' | 'completed'
