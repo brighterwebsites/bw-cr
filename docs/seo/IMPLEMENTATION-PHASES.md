@@ -123,7 +123,8 @@ Chain after page pull; invokable separately for debugging.
 ### UI
 
 - **SEO → Pages** — sortable table
-- Columns: path, title, priority, impressions, clicks, CTR, position, open opps, workflow, indexation, cluster
+- Columns: path, title, priority, impressions, clicks, CTR, pos., open opps, **next step**, **index status**, **topic**, **cluster**
+- Detail panel: SCOS SEO fields, purpose/intent/maturity, content analysis — from [`SCOS-keys.md`](SCOS-keys.md)
 - Link to opportunity / task lists filtered by page
 
 ### Exit criteria
@@ -209,7 +210,7 @@ Aligns with existing nav (`pipeline`, `customers`, `tasks`, `assets`):
 ## Immediate next actions (still exploratory → ready to build)
 
 1. Review and adjust thresholds in SCHEMA opportunity rules
-2. **Vanessa:** document SCOS `post_meta` key names → unblocks Phase C
+2. ~~SCOS meta keys~~ **Done** — [`docs/SCOS-keys.md`](../SCOS-keys.md)
 3. ~~GSC OAuth~~ **AGREED:** per-asset user OAuth + duplicate-setup UX (see [`UI-SEO.md`](../UI-SEO.md))
 4. Phase A: `asset_connections` migration + GSC connect UI on Assets
 5. Phase A: SEO → Performance page per [`UI-SEO.md`](../UI-SEO.md)

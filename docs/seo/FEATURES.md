@@ -95,7 +95,7 @@ Give Brighter Websites a single CRM view of managed sites: **performance at a gl
 
 | ID | Feature | Notes |
 |---|---|---|
-| F3.6 | WP meta columns | `workflow`, indexation status, cluster/topic (from SCOS meta keys) |
+| F3.6 | WP meta columns | `scos_next_step`, `scos_index_status`, `topic_slug`, `cluster_slug` + detail from `wp_meta_snapshot` |
 | F3.7 | Page detail panel | Metrics + list of opportunities + linked tasks |
 | F3.8 | Sync from WP | Pull posts + selected post_meta on schedule |
 
@@ -219,7 +219,7 @@ Give Brighter Websites a single CRM view of managed sites: **performance at a gl
 | # | Decision | Choice |
 |---|---|---|
 | 1 | Navigation | Top-level **SEO** with sub-routes: **Performance**, **Opportunities**, **Pages** — shared asset filter bar on each |
-| 2 | SCOS WP meta keys | Vanessa to document exact `post_meta` keys; blocked for Phase C WP sync until then |
+| 2 | SCOS WP meta keys | **Documented** — [`docs/SCOS-keys.md`](../SCOS-keys.md) |
 | 3 | GSC / GA4 auth | **Per client (per asset)** — separate OAuth grant and vault secret per `managed_website` asset |
 | 3b | Admin setup UX | **Duplicate setup from…** copies non-secret `config` from another asset; **does not** copy tokens. New asset must complete its own Connect OAuth. Prevent same token/property binding on two assets. |
 | 4 | Pages vs Opportunities | **Two screens** (unchanged) |

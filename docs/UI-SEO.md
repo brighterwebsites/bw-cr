@@ -72,9 +72,9 @@ Sort default: impressions descending.
 - Table + optional detail panel
 
 ### Table columns (initial)
-Path · Title · Priority · Impr. · Clicks · CTR · Pos. · Open opps · Workflow · Indexation · Cluster · Topic
+Path · Title · Priority · Impr. · Clicks · CTR · Pos. · Open opps · **Next step** · **Index status** · **Topic** · **Cluster**
 
-Detail panel: metrics, opportunities on this page, linked tasks, WP sync timestamp.
+Detail panel: GSC metrics, opportunities, tasks, plus SCOS fields from [`SCOS-keys.md`](SCOS-keys.md) (title, description, purpose, intent, maturity, word count, last analyzed, optimization progress).
 
 ---
 
@@ -89,7 +89,7 @@ Each managed asset gets its own connection rows — **no shared OAuth tokens acr
 |---|---|---|
 | GSC | `gsc-asset-{id}` | property URL, site URL |
 | GA4 | `ga4-asset-{id}` | property ID, conversion event (or use `assets.conversion_event_name`) |
-| WordPress | `wp-asset-{id}` | REST base URL, meta key map (when SCOS keys documented) |
+| WordPress | `wp-asset-{id}` | REST base URL, `meta_keys` + `taxonomies` per [`SCOS-keys.md`](SCOS-keys.md) |
 
 ### Connect flow
 1. Choose provider → configure non-secret fields

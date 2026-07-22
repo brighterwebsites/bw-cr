@@ -66,11 +66,12 @@ Canonical page registry per managed asset. Synced from GSC page list + WordPress
 | `wp_post_type` | `text not null default ''` | post, page, … |
 | `title` | `text not null default ''` | From WP or GSC |
 | `is_priority` | `boolean not null default false` | Manual or rule flag |
-| `workflow` | `text not null default ''` | SCOS / custom meta |
-| `indexation_status` | `text not null default ''` | e.g. indexed, noindex, unknown |
-| `cluster_slug` | `text not null default ''` | ALTC cluster |
-| `topic_slug` | `text not null default ''` | ALTC topic |
-| `meta_synced_at` | `timestamptz null` | Last WP meta pull |
+| `scos_next_step` | `text not null default ''` | ← `scos_ca_next_step` |
+| `scos_index_status` | `text not null default ''` | ← `scos_ca_index_status` (Google index state, not robots) |
+| `topic_slug` | `text not null default ''` | ← `scos_topic` taxonomy slug |
+| `cluster_slug` | `text not null default ''` | ← `scos_content_cluster` taxonomy slug |
+| `wp_meta_snapshot` | `jsonb not null default '{}'` | Remaining SCOS post_meta on pull — see [`SCOS-keys.md`](../SCOS-keys.md) |
+| `meta_synced_at` | `timestamptz null` | Last WP pull |
 | `version` | `integer not null default 1` | |
 | `created_at` / `updated_at` | `timestamptz` | |
 
@@ -205,7 +206,7 @@ Runs as **script** after GSC page metrics upsert. Example rules:
 | `low_ctr` | impressions ≥ 1000 AND ctr below expected for position band | high |
 | `striking_distance` | avg_position 11–20 AND impressions ≥ 500 | medium |
 | `page_speed` | CWV field data fails threshold (future: PageSpeed API) | high |
-| `indexation` | WP meta says indexed but GSC shows no impressions 90d | medium |
+| `indexation` | `scos_index_status` vs GSC impressions mismatch (e.g. indexed but zero impressions 90d) | medium |
 
 Problem string template:
 

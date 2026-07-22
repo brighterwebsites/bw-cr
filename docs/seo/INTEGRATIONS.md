@@ -131,25 +131,40 @@ Daily, same window as GSC (28 days vs prior 28 days).
 
 ### Pull scope (phase C read-only)
 
+**Reference:** [`docs/SCOS-keys.md`](../SCOS-keys.md)
+
 | Source | Maps to |
 |---|---|
-| `wp_posts` (publish status) | `asset_pages` url, title, post_id, post_type |
-| `post_meta` — configurable keys | `workflow`, `indexation_status`, `cluster_slug`, `topic_slug` |
-| `options` — selected keys | Site-level config if needed |
+| `wp_posts` (publish status) | `asset_pages` url, title, `wp_post_id`, `wp_post_type` |
+| SCOS post_meta (see key list) | Promoted columns + `wp_meta_snapshot` jsonb |
+| `scos_topic`, `scos_content_cluster` taxonomies | `topic_slug`, `cluster_slug` |
 
-Config example in `asset_connections.config`:
+Default `asset_connections.config` for WordPress:
 
 ```json
 {
   "site_url": "https://example.com.au",
-  "meta_keys": {
-    "workflow": "_scos_workflow",
-    "indexation_status": "_scos_indexation",
-    "cluster_slug": "_scos_cluster",
-    "topic_slug": "_scos_topic"
-  }
+  "meta_keys": [
+    "scos_seo_title",
+    "scos_seo_description",
+    "scos_seo_breadcrumb_title",
+    "scos_seo_tldr",
+    "scos_seo_robots",
+    "scos_seo_canonical",
+    "scos_ca_index_status",
+    "scos_ca_purpose",
+    "scos_ca_intent",
+    "scos_ca_maturity",
+    "scos_ca_next_step",
+    "scos_ca_optimization_progress",
+    "scos_ca_word_count",
+    "scos_ca_last_analyzed"
+  ],
+  "taxonomies": ["scos_topic", "scos_content_cluster"]
 }
 ```
+
+Phase C pulls the **subset** above into promoted columns + snapshot; extend `meta_keys` array without schema migration.
 
 ### Sync direction policy
 
@@ -157,8 +172,9 @@ Config example in `asset_connections.config`:
 |---|---|---|
 | URL, title | WordPress | — |
 | GSC metrics | CRM (from API) | — |
-| workflow, cluster, topic | **TBD** — document per field | Bidirectional with audit |
-| indexation_status | Prefer GSC + WP cross-check | Manual approval for WP write |
+| `scos_next_step`, topic, cluster | WordPress (read-first) | Bidirectional with audit |
+| `scos_index_status` | WordPress (GSC-derived in SCOS) | Read-only in CRM initially |
+| SEO title/description, robots, canonical | WordPress | Manual approval for WP write |
 
 ### Conflict rule (default)
 

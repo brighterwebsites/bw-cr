@@ -27,7 +27,7 @@ BW-CRM schema contract remains [`docs/schema-v1.md`](../schema-v1.md). SEO exten
 |---|---|
 | Nav | Top-level **SEO** → Performance · Opportunities · Pages |
 | GSC auth | Per asset; **Duplicate setup from…** copies config only, not tokens |
-| WP meta keys | Pending SCOS key documentation from Vanessa |
+| WP meta keys | [`docs/SCOS-keys.md`](../SCOS-keys.md) |
 
 Details: [`FEATURES.md`](FEATURES.md#agreed-decisions-2026-07-22) · [`UI-SEO.md`](../UI-SEO.md)
 
