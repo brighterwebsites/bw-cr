@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CompetitorSnapshotsSection } from '../features/assets/CompetitorSnapshotsSection'
 import { GscIntegrationSection } from '../features/assets/GscIntegrationSection'
+import { WpIntegrationSection } from '../features/assets/WpIntegrationSection'
 import { useData } from '../lib/data'
 import { useAppNav } from '../lib/nav'
 import type { Asset, Customer, Project } from '../lib/pipeline'
@@ -482,6 +483,7 @@ function AssetDetail({
           {integrationsOpen && (
             <div className="jdp-accordion-body">
               <GscIntegrationSection asset={asset} allAssets={assets} />
+              <WpIntegrationSection asset={asset} />
               <div className="jdp-2col" style={{ marginTop: 16 }}>
                 <DisplayField label="Health score" value={asset.health_score ?? '—'} />
                 <DisplayField label="GA4" value={<StatusChip status={asset.ga4_status} />} />

@@ -37,6 +37,33 @@ export type GscConnectionConfig = {
   domain?: string
 }
 
+export type WpConnectionConfig = {
+  site_url?: string
+  post_types?: string[]
+  meta_keys?: string[]
+  taxonomies?: string[]
+}
+
+export type AssetPage = {
+  id: number
+  asset_id: number
+  url_path: string
+  canonical_url: string
+  wp_post_id: number | null
+  wp_post_type: string
+  title: string
+  is_priority: boolean
+  scos_next_step: string
+  scos_index_status: string
+  topic_slug: string
+  cluster_slug: string
+  wp_meta_snapshot: Record<string, unknown>
+  meta_synced_at: string | null
+  version: number
+  created_at: string
+  updated_at: string
+}
+
 /** Managed sites for SEO views — include website until seed uses managed_website. */
 export function isSeoMonitoredAsset(a: Asset): boolean {
   return (

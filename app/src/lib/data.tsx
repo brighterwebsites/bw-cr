@@ -19,7 +19,7 @@ import type {
   ProjectStage,
   Task,
 } from './pipeline'
-import type { AssetConnection, MetricsSnapshot } from './seo'
+import type { AssetConnection, AssetPage, MetricsSnapshot } from './seo'
 
 export type {
   Asset,
@@ -63,6 +63,7 @@ interface DataState {
   tasks: Task[]
   deliverables: ProjectDeliverable[]
   assetConnections: import('./seo').AssetConnection[]
+  assetPages: import('./seo').AssetPage[]
   metricsSnapshots: import('./seo').MetricsSnapshot[]
   refresh: () => Promise<void>
   refreshMetrics: () => Promise<void>
@@ -70,6 +71,14 @@ interface DataState {
   duplicateGscSetup: (fromAssetId: number, toAssetId: number) => Promise<void>
   saveGscProperty: (assetId: number, gscProperty: string) => Promise<void>
   pullGscMetrics: (assetId?: number) => Promise<void>
+  connectWordPress: (input: {
+    assetId: number
+    siteUrl: string
+    wpUsername: string
+    wpAppPassword: string
+  }) => Promise<void>
+  syncWpPages: (assetId?: number) => Promise<number>
+  updateAssetPagePriority: (pageId: number, isPriority: boolean) => Promise<void>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
   createProject: (row: TablesInsert<'projects'>) => Promise<Project>
   updateCustomer: (id: number, patch: CustomerUpdate) => Promise<Customer>
@@ -98,6 +107,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [deliverables, setDeliverables] = useState<ProjectDeliverable[]>([])
   const [assetConnections, setAssetConnections] = useState<AssetConnection[]>([])
+  const [assetPages, setAssetPages] = useState<AssetPage[]>([])
   const [metricsSnapshots, setMetricsSnapshots] = useState<MetricsSnapshot[]>([])
 
   const refreshMetrics = useCallback(async () => {
@@ -115,6 +125,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const { data, error: cErr } = await supabase.from('asset_connections').select('*')
     if (cErr) throw new Error(cErr.message)
     setAssetConnections((data ?? []) as AssetConnection[])
+  }, [])
+
+  const refreshAssetPages = useCallback(async () => {
+    const { data, error: pErr } = await supabase
+      .from('asset_pages')
+      .select('*')
+      .order('url_path')
+    if (pErr) throw new Error(pErr.message)
+    setAssetPages((data ?? []) as AssetPage[])
   }, [])
 
   const refresh = useCallback(async () => {
@@ -145,8 +164,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setStages(stageRes.data ?? [])
     setTasks(taskRes.data ?? [])
     setDeliverables(delRes.data ?? [])
-    await Promise.all([refreshMetrics(), refreshConnections()])
-  }, [refreshMetrics, refreshConnections])
+    await Promise.all([refreshMetrics(), refreshConnections(), refreshAssetPages()])
+  }, [refreshMetrics, refreshConnections, refreshAssetPages])
 
   useEffect(() => {
     let cancelled = false
@@ -458,6 +477,65 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await refresh()
   }, [refresh])
 
+  const connectWordPress = useCallback(
+    async (input: {
+      assetId: number
+      siteUrl: string
+      wpUsername: string
+      wpAppPassword: string
+    }) => {
+      const { data, error: fnErr } = await supabase.functions.invoke('wp-connect', {
+        body: {
+          asset_id: input.assetId,
+          site_url: input.siteUrl,
+          wp_username: input.wpUsername,
+          wp_app_password: input.wpAppPassword,
+        },
+      })
+      if (fnErr) throw new Error(fnErr.message)
+      if (data && typeof data === 'object' && 'error' in data && data.error) {
+        throw new Error(String(data.error))
+      }
+      await refresh()
+    },
+    [refresh],
+  )
+
+  const syncWpPages = useCallback(
+    async (assetId?: number): Promise<number> => {
+      const { data, error: fnErr } = await supabase.functions.invoke('wp-sync-pages', {
+        body: assetId ? { asset_id: assetId } : {},
+      })
+      if (fnErr) throw new Error(fnErr.message)
+      if (data && typeof data === 'object' && 'error' in data && data.error) {
+        throw new Error(String(data.error))
+      }
+      const results =
+        (data as { results?: Array<{ ok: boolean; pages_upserted?: number; error?: string }> })
+          ?.results ?? []
+      const failed = results.filter((r) => !r.ok)
+      if (failed.length && results.length === 1) {
+        throw new Error(failed[0].error ?? 'WordPress sync failed')
+      }
+      const count = results.reduce((sum, r) => sum + (r.pages_upserted ?? 0), 0)
+      await refresh()
+      return count
+    },
+    [refresh],
+  )
+
+  const updateAssetPagePriority = useCallback(
+    async (pageId: number, isPriority: boolean) => {
+      const { error: updErr } = await supabase
+        .from('asset_pages')
+        .update({ is_priority: isPriority })
+        .eq('id', pageId)
+      if (updErr) throw new Error(updErr.message)
+      await refreshAssetPages()
+    },
+    [refreshAssetPages],
+  )
+
   const value = useMemo(
     () => ({
       loading,
@@ -469,6 +547,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       tasks,
       deliverables,
       assetConnections,
+      assetPages,
       metricsSnapshots,
       refresh,
       refreshMetrics,
@@ -476,6 +555,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       duplicateGscSetup,
       saveGscProperty,
       pullGscMetrics,
+      connectWordPress,
+      syncWpPages,
+      updateAssetPagePriority,
       updateProject,
       createProject,
       updateCustomer,
@@ -501,6 +583,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       tasks,
       deliverables,
       assetConnections,
+      assetPages,
       metricsSnapshots,
       refresh,
       refreshMetrics,
@@ -508,6 +591,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       duplicateGscSetup,
       saveGscProperty,
       pullGscMetrics,
+      connectWordPress,
+      syncWpPages,
+      updateAssetPagePriority,
       updateProject,
       createProject,
       updateCustomer,
