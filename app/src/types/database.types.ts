@@ -295,6 +295,90 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['competitor_snapshots']['Insert']>
         Relationships: []
       }
+      metrics_snapshots: {
+        Row: {
+          id: number
+          asset_id: number
+          period_label: string
+          snapshot_type: Database['public']['Enums']['snapshot_type']
+          domain_rank: number | null
+          domain_rank_delta: number | null
+          clicks: number | null
+          clicks_delta: number | null
+          impressions: number | null
+          impressions_delta: number | null
+          ctr: number | null
+          ctr_delta: number | null
+          avg_rank: number | null
+          avg_rank_delta: number | null
+          conversions: number | null
+          conversions_delta: number | null
+          engagement_rate: number | null
+          engagement_rate_delta: number | null
+          avg_session_duration: number | null
+          avg_session_duration_delta: number | null
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: number
+          period_label: string
+          id?: number
+          snapshot_type?: Database['public']['Enums']['snapshot_type']
+          domain_rank?: number | null
+          domain_rank_delta?: number | null
+          clicks?: number | null
+          clicks_delta?: number | null
+          impressions?: number | null
+          impressions_delta?: number | null
+          ctr?: number | null
+          ctr_delta?: number | null
+          avg_rank?: number | null
+          avg_rank_delta?: number | null
+          conversions?: number | null
+          conversions_delta?: number | null
+          engagement_rate?: number | null
+          engagement_rate_delta?: number | null
+          avg_session_duration?: number | null
+          avg_session_duration_delta?: number | null
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['metrics_snapshots']['Insert']>
+        Relationships: []
+      }
+      asset_connections: {
+        Row: {
+          id: number
+          asset_id: number
+          provider: string
+          status: Database['public']['Enums']['connection_status']
+          config: Json
+          secret_ref: string
+          last_sync_at: string | null
+          last_error: string
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: number
+          provider: string
+          id?: number
+          status?: Database['public']['Enums']['connection_status']
+          config?: Json
+          secret_ref?: string
+          last_sync_at?: string | null
+          last_error?: string
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['asset_connections']['Insert']>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -308,6 +392,7 @@ export type Database = {
       deliverable_status: 'planned' | 'in_progress' | 'done' | 'dropped'
       task_status: 'not_started' | 'in_progress' | 'blocked' | 'completed'
       task_type: 'task' | 'agent_task' | 'internal'
+      snapshot_type: 'baseline' | 'update'
     }
     CompositeTypes: Record<string, never>
   }

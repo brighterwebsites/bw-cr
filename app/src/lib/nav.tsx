@@ -7,7 +7,9 @@ import {
   type ReactNode,
 } from 'react'
 
-export type Page = 'pipeline' | 'customers' | 'tasks' | 'assets'
+export type Page = 'pipeline' | 'customers' | 'tasks' | 'assets' | 'seo'
+
+export type SeoTab = 'performance' | 'opportunities' | 'pages'
 
 export type TasksIntent = {
   search: string
@@ -29,6 +31,9 @@ export type PipelineIntent = {
 type AppNavValue = {
   page: Page
   setPage: (page: Page) => void
+  seoTab: SeoTab
+  setSeoTab: (tab: SeoTab) => void
+  openSeo: (tab?: SeoTab) => void
   tasksIntent: TasksIntent | null
   consumeTasksIntent: () => void
   openTasksForProject: (projectName: string) => void
@@ -48,6 +53,7 @@ const AppNavContext = createContext<AppNavValue | null>(null)
 
 export function AppNavProvider({ children }: { children: ReactNode }) {
   const [page, setPage] = useState<Page>('pipeline')
+  const [seoTab, setSeoTab] = useState<SeoTab>('performance')
   const [tasksIntent, setTasksIntent] = useState<TasksIntent | null>(null)
   const [assetsIntent, setAssetsIntent] = useState<AssetsIntent | null>(null)
   const [customersIntent, setCustomersIntent] = useState<CustomersIntent | null>(null)
@@ -83,10 +89,18 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
     setPage('pipeline')
   }, [])
 
+  const openSeo = useCallback((tab: SeoTab = 'performance') => {
+    setSeoTab(tab)
+    setPage('seo')
+  }, [])
+
   const value = useMemo(
     () => ({
       page,
       setPage,
+      seoTab,
+      setSeoTab,
+      openSeo,
       tasksIntent,
       consumeTasksIntent,
       openTasksForProject,
@@ -103,6 +117,8 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
     }),
     [
       page,
+      seoTab,
+      openSeo,
       tasksIntent,
       consumeTasksIntent,
       openTasksForProject,

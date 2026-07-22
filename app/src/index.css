@@ -1562,3 +1562,232 @@ a {
     max-width: none;
   }
 }
+
+/* ── SEO Performance (Phase A) ─────────────────────────────────────── */
+
+.seo-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.seo-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 20px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+
+.seo-tab {
+  border: none;
+  background: transparent;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.seo-tab-on {
+  color: var(--ink);
+  border-bottom-color: var(--primary);
+}
+
+.seo-tab-panel {
+  flex: 1;
+  overflow: auto;
+}
+
+.seo-page {
+  padding: 20px 24px 32px;
+}
+
+.seo-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.seo-page-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.seo-page-sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.seo-page-error {
+  margin-bottom: 12px;
+}
+
+.seo-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.seo-filter-asset {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seo-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.seo-filter-open-asset {
+  margin-left: auto;
+}
+
+.seo-perf-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .seo-perf-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.seo-perf-card {
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  padding: 18px 20px;
+  transition: box-shadow 0.15s ease;
+}
+
+.seo-perf-card:hover {
+  box-shadow: var(--shadow-card, 0 4px 16px rgba(0, 0, 0, 0.06));
+}
+
+.seo-perf-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.seo-perf-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .seo-perf-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.seo-perf-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.seo-perf-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.seo-perf-delta {
+  font-size: 11px;
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.seo-perf-delta.good {
+  color: #166337;
+}
+
+.seo-perf-delta.bad {
+  color: var(--danger);
+}
+
+.seo-perf-period {
+  margin-top: 12px;
+  font-size: 11px;
+}
+
+.seo-empty {
+  padding: 28px 24px;
+}
+
+.seo-empty-list {
+  margin: 12px 0 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.seo-perf-hint {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.seo-stub h2 {
+  margin: 0 0 8px;
+}
+
+.assets-gsc-notice {
+  margin: 12px 16px 0;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.gsc-integration {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
+.gsc-integration-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.gsc-integration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gsc-dup-setup {
+  margin-top: 8px;
+}
+
+.gsc-dup-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.gsc-dup-row .jdp-input {
+  flex: 1;
+}

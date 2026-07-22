@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CompetitorSnapshotsSection } from '../features/assets/CompetitorSnapshotsSection'
+import { GscIntegrationSection } from '../features/assets/GscIntegrationSection'
 import { useData } from '../lib/data'
 import { useAppNav } from '../lib/nav'
 import type { Asset, Customer, Project } from '../lib/pipeline'
@@ -62,6 +63,26 @@ export default function AssetsPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
   const [createDraft, setCreateDraft] = useState<AssetForm | null>(null)
+  const [openIntegrationsFor, setOpenIntegrationsFor] = useState<number | null>(null)
+  const [gscNotice, setGscNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const gsc = params.get('gsc')
+    const assetParam = params.get('asset_id')
+    if (!gsc || !assetParam) return
+    const aid = Number(assetParam)
+    if (!Number.isFinite(aid)) return
+    setCreating(false)
+    setCreateDraft(null)
+    setSelectedId(aid)
+    setOpenIntegrationsFor(aid)
+    if (gsc === 'connected') setGscNotice('GSC connected — refresh metrics or confirm property URL.')
+    else if (gsc === 'error') {
+      setGscNotice(`GSC setup issue: ${params.get('message') ?? 'unknown error'}`)
+    }
+    window.history.replaceState({}, '', window.location.pathname)
+  }, [])
 
   useEffect(() => {
     if (!assetsIntent) return
@@ -119,6 +140,15 @@ export default function AssetsPage() {
   if (error) return <div className="page-pad page-error">{error}</div>
 
   return (
+    <>
+      {gscNotice && (
+        <div className="assets-gsc-notice login-ok">
+          {gscNotice}{' '}
+          <button type="button" className="btn-link" onClick={() => setGscNotice(null)}>
+            dismiss
+          </button>
+        </div>
+      )}
     <div className="master-detail">
       <div className="master-list">
         <div className="master-list-search">
@@ -211,6 +241,7 @@ export default function AssetsPage() {
             initial={formFromAsset(selected)}
             customers={customers}
             projects={projects}
+            openIntegrations={openIntegrationsFor === selected.id}
             onSave={async (form) => {
               await updateAsset(selected.id, {
                 name: form.name,
@@ -225,6 +256,7 @@ export default function AssetsPage() {
         )}
       </div>
     </div>
+    </>
   )
 }
 
@@ -235,6 +267,7 @@ function AssetDetail({
   initial,
   customers,
   projects,
+  openIntegrations,
   onSave,
   onCreate,
   onCancel,
@@ -245,10 +278,12 @@ function AssetDetail({
   initial: AssetForm
   customers: Customer[]
   projects: Project[]
+  openIntegrations?: boolean
   onSave?: (form: AssetForm) => Promise<void>
   onCreate?: (form: AssetForm) => Promise<void>
   onCancel?: () => void
 }) {
+  const { assets } = useData()
   const [form, setForm] = useState(initial)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -260,10 +295,10 @@ function AssetDetail({
     setForm(initial)
     setErr(null)
     setOk(false)
-    setIntegrationsOpen(false)
+    setIntegrationsOpen(Boolean(openIntegrations))
     setRunPanelOpen(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync on assetId / mode only
-  }, [assetId, mode])
+  }, [assetId, mode, openIntegrations])
 
   const projectsForCustomer = useMemo(() => {
     if (form.customer_id === '') return []
@@ -446,9 +481,9 @@ function AssetDetail({
           </button>
           {integrationsOpen && (
             <div className="jdp-accordion-body">
-              <div className="jdp-2col">
+              <GscIntegrationSection asset={asset} allAssets={assets} />
+              <div className="jdp-2col" style={{ marginTop: 16 }}>
                 <DisplayField label="Health score" value={asset.health_score ?? '—'} />
-                <DisplayField label="GSC" value={<StatusChip status={asset.gsc_status} />} />
                 <DisplayField label="GA4" value={<StatusChip status={asset.ga4_status} />} />
                 <DisplayField label="WP CLI" value={<StatusChip status={asset.wp_cli_status} />} />
                 <DisplayField label="Hermes profile" value={asset.hermes_profile || '—'} />

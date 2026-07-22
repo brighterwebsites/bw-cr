@@ -19,6 +19,7 @@ import type {
   ProjectStage,
   Task,
 } from './pipeline'
+import type { AssetConnection, MetricsSnapshot } from './seo'
 
 export type {
   Asset,
@@ -61,7 +62,14 @@ interface DataState {
   stages: ProjectStage[]
   tasks: Task[]
   deliverables: ProjectDeliverable[]
+  assetConnections: import('./seo').AssetConnection[]
+  metricsSnapshots: import('./seo').MetricsSnapshot[]
   refresh: () => Promise<void>
+  refreshMetrics: () => Promise<void>
+  startGscOAuth: (assetId: number) => Promise<string>
+  duplicateGscSetup: (fromAssetId: number, toAssetId: number) => Promise<void>
+  saveGscProperty: (assetId: number, gscProperty: string) => Promise<void>
+  pullGscMetrics: (assetId?: number) => Promise<void>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
   createProject: (row: TablesInsert<'projects'>) => Promise<Project>
   updateCustomer: (id: number, patch: CustomerUpdate) => Promise<Customer>
@@ -89,6 +97,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [stages, setStages] = useState<ProjectStage[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [deliverables, setDeliverables] = useState<ProjectDeliverable[]>([])
+  const [assetConnections, setAssetConnections] = useState<AssetConnection[]>([])
+  const [metricsSnapshots, setMetricsSnapshots] = useState<MetricsSnapshot[]>([])
+
+  const refreshMetrics = useCallback(async () => {
+    const { data, error: mErr } = await supabase
+      .from('metrics_snapshots')
+      .select(
+        'id, asset_id, period_label, snapshot_type, clicks, clicks_delta, impressions, impressions_delta, ctr, ctr_delta, avg_rank, avg_rank_delta, conversions, created_at',
+      )
+      .order('created_at', { ascending: false })
+    if (mErr) throw new Error(mErr.message)
+    setMetricsSnapshots((data ?? []) as MetricsSnapshot[])
+  }, [])
+
+  const refreshConnections = useCallback(async () => {
+    const { data, error: cErr } = await supabase.from('asset_connections').select('*')
+    if (cErr) throw new Error(cErr.message)
+    setAssetConnections((data ?? []) as AssetConnection[])
+  }, [])
 
   const refresh = useCallback(async () => {
     setError(null)
@@ -118,7 +145,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setStages(stageRes.data ?? [])
     setTasks(taskRes.data ?? [])
     setDeliverables(delRes.data ?? [])
-  }, [])
+    await Promise.all([refreshMetrics(), refreshConnections()])
+  }, [refreshMetrics, refreshConnections])
 
   useEffect(() => {
     let cancelled = false
@@ -345,6 +373,91 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const startGscOAuth = useCallback(async (assetId: number) => {
+    const { data, error: fnErr } = await supabase.functions.invoke('gsc-oauth-start', {
+      body: { asset_id: assetId },
+    })
+    if (fnErr) throw new Error(fnErr.message)
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(String(data.error))
+    }
+    const url = (data as { url?: string })?.url
+    if (!url) throw new Error('OAuth URL not returned')
+    return url
+  }, [])
+
+  const duplicateGscSetup = useCallback(
+    async (fromAssetId: number, toAssetId: number) => {
+      const { data: source, error: srcErr } = await supabase
+        .from('asset_connections')
+        .select('config')
+        .eq('asset_id', fromAssetId)
+        .eq('provider', 'gsc')
+        .maybeSingle()
+      if (srcErr) throw new Error(srcErr.message)
+      if (!source) throw new Error('Source asset has no GSC config')
+
+      const { error: upsErr } = await supabase
+        .from('asset_connections')
+        .upsert(
+          {
+            asset_id: toAssetId,
+            provider: 'gsc',
+            status: 'unknown',
+            config: source.config,
+            secret_ref: '',
+            last_error: 'Copied config — connect GSC to authorize this site',
+          },
+          { onConflict: 'asset_id,provider' },
+        )
+      if (upsErr) throw new Error(upsErr.message)
+
+      await supabase.from('assets').update({ gsc_status: 'unknown' }).eq('id', toAssetId)
+      await refresh()
+    },
+    [refresh],
+  )
+
+  const saveGscProperty = useCallback(
+    async (assetId: number, gscProperty: string) => {
+      const { data: existing, error: getErr } = await supabase
+        .from('asset_connections')
+        .select('config')
+        .eq('asset_id', assetId)
+        .eq('provider', 'gsc')
+        .maybeSingle()
+      if (getErr) throw new Error(getErr.message)
+      const config = {
+        ...((existing?.config as Record<string, unknown>) ?? {}),
+        gsc_property: gscProperty,
+      }
+      const { error: updErr } = await supabase
+        .from('asset_connections')
+        .update({ config, last_error: '' })
+        .eq('asset_id', assetId)
+        .eq('provider', 'gsc')
+      if (updErr) throw new Error(updErr.message)
+      await refresh()
+    },
+    [refresh],
+  )
+
+  const pullGscMetrics = useCallback(async (assetId?: number) => {
+    const { data, error: fnErr } = await supabase.functions.invoke('gsc-pull-site', {
+      body: assetId ? { asset_id: assetId } : {},
+    })
+    if (fnErr) throw new Error(fnErr.message)
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(String(data.error))
+    }
+    const results = (data as { results?: Array<{ ok: boolean; error?: string }> })?.results ?? []
+    const failed = results.filter((r) => !r.ok)
+    if (failed.length && results.length === 1) {
+      throw new Error(failed[0].error ?? 'GSC pull failed')
+    }
+    await refresh()
+  }, [refresh])
+
   const value = useMemo(
     () => ({
       loading,
@@ -355,7 +468,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       stages,
       tasks,
       deliverables,
+      assetConnections,
+      metricsSnapshots,
       refresh,
+      refreshMetrics,
+      startGscOAuth,
+      duplicateGscSetup,
+      saveGscProperty,
+      pullGscMetrics,
       updateProject,
       createProject,
       updateCustomer,
@@ -380,7 +500,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       stages,
       tasks,
       deliverables,
+      assetConnections,
+      metricsSnapshots,
       refresh,
+      refreshMetrics,
+      startGscOAuth,
+      duplicateGscSetup,
+      saveGscProperty,
+      pullGscMetrics,
       updateProject,
       createProject,
       updateCustomer,
