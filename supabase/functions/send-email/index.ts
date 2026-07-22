@@ -43,7 +43,6 @@ Deno.serve(async (req) => {
   }
 
   const { data: row, error } = await admin.service
-    .schema('private')
     .from('integrations')
     .select('secret, config')
     .eq('provider', 'email')

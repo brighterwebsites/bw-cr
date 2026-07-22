@@ -38,7 +38,6 @@ Deno.serve(async (req) => {
   }
 
   const { data: existing } = await admin.service
-    .schema('private')
     .from('integrations')
     .select('secret, secret_last4')
     .eq('provider', provider)
@@ -47,7 +46,7 @@ Deno.serve(async (req) => {
   const nextSecret = body.clear_secret ? null : body.secret ?? existing?.secret ?? null
   const nextLast4 = body.clear_secret ? '' : body.secret ? body.secret.slice(-4) : existing?.secret_last4 ?? ''
 
-  const { error } = await admin.service.schema('private').from('integrations').upsert(
+  const { error } = await admin.service.from('integrations').upsert(
     {
       provider,
       config: body.config ?? {},

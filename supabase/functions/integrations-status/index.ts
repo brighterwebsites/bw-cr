@@ -28,7 +28,6 @@ Deno.serve(async (req) => {
   }
 
   const { data, error } = await admin.service
-    .schema('private')
     .from('integrations')
     .select('config, secret_last4, secret')
     .eq('provider', provider)

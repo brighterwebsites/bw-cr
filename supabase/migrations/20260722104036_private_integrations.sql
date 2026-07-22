@@ -3,6 +3,10 @@
 -- platform.cyberpersons.com, not hosting SMTP). Service-role only; never
 -- exposed via PostgREST to authenticated/anon (Edge Functions read it
 -- after verifying the caller is admin via their JWT).
+--
+-- Superseded by 20260722105255_move_integrations_to_public.sql — the
+-- private schema isn't reachable via PostgREST (only 'public' is
+-- exposed by default), so this table was unusable and got moved.
 
 create schema if not exists private;
 
