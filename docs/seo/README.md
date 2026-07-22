@@ -21,6 +21,16 @@ BW-CRM schema contract remains [`docs/schema-v1.md`](../schema-v1.md). SEO exten
 | [INTEGRATIONS.md](INTEGRATIONS.md) | GSC, GA4, WordPress, Hermes, secrets — auth, sync, cadence |
 | [IMPLEMENTATION-PHASES.md](IMPLEMENTATION-PHASES.md) | Phased delivery plan with exit criteria |
 
+## Agreed decisions (2026-07-22)
+
+| Topic | Choice |
+|---|---|
+| Nav | Top-level **SEO** → Performance · Opportunities · Pages |
+| GSC auth | Per asset; **Duplicate setup from…** copies config only, not tokens |
+| WP meta keys | Pending SCOS key documentation from Vanessa |
+
+Details: [`FEATURES.md`](FEATURES.md#agreed-decisions-2026-07-22) · [`UI-SEO.md`](../UI-SEO.md)
+
 ## Design constraints
 
 Follow [`.cursor/rules/ai-workflow-efficiency.mdc`](../../.cursor/rules/ai-workflow-efficiency.mdc):

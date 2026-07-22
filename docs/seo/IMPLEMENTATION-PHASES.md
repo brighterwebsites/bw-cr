@@ -197,7 +197,7 @@ Aligns with existing nav (`pipeline`, `customers`, `tasks`, `assets`):
 
 | Risk | Mitigation |
 |---|---|
-| GSC OAuth maintenance | Document refresh flow; one Google Cloud project for agency |
+| GSC OAuth maintenance | One GCP OAuth app; per-asset tokens in Vault; duplicate-setup copies config only |
 | Page volume | Limit to GSC-known URLs + published WP posts; no crawl storage |
 | Opportunity noise | Tunable thresholds in config; dismiss + snooze |
 | WP auth diversity | Start REST application passwords; SSH for edge cases |
@@ -209,7 +209,7 @@ Aligns with existing nav (`pipeline`, `customers`, `tasks`, `assets`):
 ## Immediate next actions (still exploratory → ready to build)
 
 1. Review and adjust thresholds in SCHEMA opportunity rules
-2. Confirm SCOS meta key names for WP sync config
-3. Pick GSC OAuth approach (service account vs user OAuth per client)
-4. Approve Phase A scope → write migrations only for `asset_connections` if needed
-5. Sketch Performance page wireframe against existing `index.css` patterns
+2. **Vanessa:** document SCOS `post_meta` key names → unblocks Phase C
+3. ~~GSC OAuth~~ **AGREED:** per-asset user OAuth + duplicate-setup UX (see [`UI-SEO.md`](../UI-SEO.md))
+4. Phase A: `asset_connections` migration + GSC connect UI on Assets
+5. Phase A: SEO → Performance page per [`UI-SEO.md`](../UI-SEO.md)

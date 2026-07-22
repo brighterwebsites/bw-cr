@@ -24,10 +24,35 @@
 - Site-level 28-day metrics → Performance dashboard cards
 - Page-level metrics → Pages table + opportunity scoring input
 
-### Auth
+### Auth — **AGREED: per asset**
 
-- Google OAuth2 service account or user OAuth with refresh token
-- Store refresh token + property URL in **Vault**; `asset_connections.config` holds `{ "property": "sc-domain:example.com.au" }`
+Each `managed_website` asset has its own GSC connection:
+
+| Stored where | Contents |
+|---|---|
+| Vault (`gsc-asset-{asset_id}`) | OAuth refresh token only |
+| `asset_connections.config` | `{ "property": "sc-domain:example.com.au", "site_url": "https://…" }` |
+| `asset_connections.secret_ref` | `gsc-asset-{asset_id}` |
+
+Use **Google user OAuth** (not a shared service account) so each client site is authorized under the correct Search Console property.
+
+One Google Cloud OAuth client app for the agency is fine — **tokens are per asset**, not shared.
+
+#### Duplicate setup from… (admin)
+
+Speeds onboarding a new asset without retyping config:
+
+1. Operator picks **Duplicate setup from…** → selects a source asset.
+2. System copies **`asset_connections.config`** (property URL pattern, site URL, any shared non-secret defaults).
+3. **`secret_ref` stays empty** until the operator completes **Connect GSC** for the new asset.
+4. OAuth flow writes a **new** vault entry — never clone the source refresh token.
+5. Optional guard: reject if the new OAuth grant resolves to the same GSC property already bound to a different asset (unless operator explicitly overrides).
+
+Same pattern applies to GA4 and WordPress connections later.
+
+#### Agency Google Cloud project
+
+Single OAuth client in Brighter Websites’ GCP project; redirect URI points at BW-CRM Edge Function callback. Per-asset tokens stored separately in Vault.
 
 ### API usage (no LLM)
 
@@ -185,8 +210,8 @@ Align with SEO OS: approving a plan creates a bounded task — **no auto-publish
 
 | Secret type | Location | Reference |
 |---|---|---|
-| GSC OAuth refresh token | Supabase Vault | `asset_connections.secret_ref = 'gsc-asset-{id}'` |
-| GA4 service account JSON | Vault | `ga4-asset-{id}` |
+| GSC OAuth refresh token | Supabase Vault | `gsc-asset-{id}` — **one per asset, never shared** |
+| GA4 OAuth refresh token | Vault | `ga4-asset-{id}` — same per-asset rule |
 | WP application password | Vault | `wp-asset-{id}'` |
 | SSH private key | Vault | `ssh-asset-{id}'` |
 | SSH user, DB prefix | `asset_connections.config` (non-secret) | plain text ok |

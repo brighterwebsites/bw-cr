@@ -214,11 +214,16 @@ Give Brighter Websites a single CRM view of managed sites: **performance at a gl
 
 ---
 
-## Open decisions
+## Agreed decisions (2026-07-22)
 
-| # | Question | Lean |
+| # | Decision | Choice |
 |---|---|---|
-| 1 | New top-level nav “SEO” vs tabs inside Assets? | Top-level **SEO** with asset filter (matches SEO OS mental model) |
-| 2 | One combined “Pages & Opportunities” view vs two screens? | **Two screens** — opps for action queue; pages for inventory |
-| 3 | Snapshot history vs current-only page metrics? | **Current-only** first; snapshot history LATER |
-| 4 | Where does opportunity scan run? | Supabase Edge Function + pg_cron; OAuth refresh token in vault |
+| 1 | Navigation | Top-level **SEO** with sub-routes: **Performance**, **Opportunities**, **Pages** — shared asset filter bar on each |
+| 2 | SCOS WP meta keys | Vanessa to document exact `post_meta` keys; blocked for Phase C WP sync until then |
+| 3 | GSC / GA4 auth | **Per client (per asset)** — separate OAuth grant and vault secret per `managed_website` asset |
+| 3b | Admin setup UX | **Duplicate setup from…** copies non-secret `config` from another asset; **does not** copy tokens. New asset must complete its own Connect OAuth. Prevent same token/property binding on two assets. |
+| 4 | Pages vs Opportunities | **Two screens** (unchanged) |
+| 5 | Page metrics history | **Current-only** first |
+| 6 | Opportunity scan runtime | Supabase Edge Function + pg_cron |
+
+UI wireframe: [`docs/UI-SEO.md`](../UI-SEO.md).

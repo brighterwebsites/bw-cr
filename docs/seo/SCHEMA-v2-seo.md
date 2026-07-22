@@ -161,6 +161,8 @@ Action queue rows. Denormalized metrics copied at detection time (like SEO OS) s
 
 **Unique:** `(asset_id, provider)`
 
+**Duplicate setup from… (AGREED):** UI clones `config` from another asset’s row; `secret_ref` cleared; operator must OAuth separately. Optional `config.gsc_property` used to enforce one CRM asset per Search Console property.
+
 ---
 
 ## Extensions to existing v1 tables
