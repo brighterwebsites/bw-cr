@@ -101,8 +101,9 @@ export function SeoPagesView() {
     setErr(null)
     setMsg(null)
     try {
-      const count = await syncWpPages(filter === 'all' ? undefined : filter)
-      setMsg(`Synced ${count} page(s) from WordPress`)
+      const { upserted, skipped } = await syncWpPages(filter === 'all' ? undefined : filter)
+      const skippedText = skipped ? `, skipped ${skipped} sitemap-excluded` : ''
+      setMsg(`Synced ${upserted} page(s) from WordPress${skippedText}`)
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Sync failed')
     } finally {

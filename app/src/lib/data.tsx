@@ -87,9 +87,11 @@ interface DataState {
   }) => Promise<void>
   saveWordPressConfig: (
     assetId: number,
-    patch: { siteUrl: string; wpUsername: string },
+    patch: { siteUrl: string; wpUsername: string; postTypes?: string[] },
   ) => Promise<void>
-  syncWpPages: (assetId?: number) => Promise<number>
+  syncWpPages: (
+    assetId?: number,
+  ) => Promise<{ upserted: number; skipped: number; postTypes: string[] }>
   updateAssetPagePriority: (pageId: number, isPriority: boolean) => Promise<void>
   runSeoScan: (assetId?: number) => Promise<{
     pagesUpdated: number
@@ -531,7 +533,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [refresh])
 
   const saveWordPressConfig = useCallback(
-    async (assetId: number, patch: { siteUrl: string; wpUsername: string }) => {
+    async (
+      assetId: number,
+      patch: { siteUrl: string; wpUsername: string; postTypes?: string[] },
+    ) => {
       const siteUrl = patch.siteUrl.trim().replace(/\/+$/, '').replace(/^(?!https?:\/\/)/i, 'https://')
       const wpUsername = patch.wpUsername.trim()
       const { data: existing, error: getErr } = await supabase
@@ -546,7 +551,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ...((existing?.config as Record<string, unknown>) ?? {}),
         site_url: siteUrl,
         wp_username: wpUsername,
-        post_types: ['post'],
+      } as Record<string, unknown>
+      if (patch.postTypes?.length) {
+        config.post_types = patch.postTypes
+      } else {
+        delete config.post_types
       }
 
       const { error: upsErr } = await supabase.from('asset_connections').upsert(
@@ -554,7 +563,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           asset_id: assetId,
           provider: 'wordpress',
           status: existing?.status ?? 'unknown',
-          config,
+          config: config as never,
           secret_ref: '',
           last_error: '',
         },
@@ -592,7 +601,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   )
 
   const syncWpPages = useCallback(
-    async (assetId?: number): Promise<number> => {
+    async (assetId?: number) => {
       const { data, error: fnErr } = await supabase.functions.invoke('wp-sync-pages', {
         body: assetId ? { asset_id: assetId } : {},
       })
@@ -601,15 +610,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
         throw new Error(String(data.error))
       }
       const results =
-        (data as { results?: Array<{ ok: boolean; pages_upserted?: number; error?: string }> })
-          ?.results ?? []
+        (data as {
+          results?: Array<{
+            ok: boolean
+            pages_upserted?: number
+            pages_skipped?: number
+            post_types?: string[]
+            error?: string
+          }>
+        })?.results ?? []
       const failed = results.filter((r) => !r.ok)
       if (failed.length && results.length === 1) {
         throw new Error(failed[0].error ?? 'WordPress sync failed')
       }
-      const count = results.reduce((sum, r) => sum + (r.pages_upserted ?? 0), 0)
+      const upserted = results.reduce((sum, r) => sum + (r.pages_upserted ?? 0), 0)
+      const skipped = results.reduce((sum, r) => sum + (r.pages_skipped ?? 0), 0)
+      const postTypes = Array.from(new Set(results.flatMap((r) => r.post_types ?? [])))
       await refresh()
-      return count
+      return { upserted, skipped, postTypes }
     },
     [refresh],
   )

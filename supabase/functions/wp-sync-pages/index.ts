@@ -3,9 +3,10 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
 import {
   DEFAULT_WP_META_KEYS,
-  DEFAULT_WP_TAXONOMIES,
   fetchAllPublishedPosts,
+  isSitemapExcluded,
   parseWpPost,
+  resolvePostTypesToSync,
   type WpConnectionConfig,
 } from '../_shared/wp.ts'
 
@@ -13,6 +14,8 @@ type SyncResult = {
   asset_id: number
   ok: boolean
   pages_upserted?: number
+  pages_skipped?: number
+  post_types?: string[]
   error?: string
 }
 
@@ -42,7 +45,6 @@ async function syncOneAsset(
   const siteUrl = config.site_url ?? ''
   const username = secretRow?.wp_username ?? ''
   const appPassword = secretRow?.wp_app_password ?? ''
-  const postTypes = config.post_types?.length ? config.post_types : ['post']
   const metaKeys = config.meta_keys?.length ? config.meta_keys : [...DEFAULT_WP_META_KEYS]
 
   if (!siteUrl || !username || !appPassword) {
@@ -52,10 +54,17 @@ async function syncOneAsset(
   try {
     const now = new Date().toISOString()
     let upserted = 0
+    let skipped = 0
 
-    for (const postType of postTypes) {
-      const posts = await fetchAllPublishedPosts(siteUrl, username, appPassword, postType)
+    const typeInfos = await resolvePostTypesToSync(siteUrl, username, appPassword, config.post_types)
+
+    for (const { restBase } of typeInfos) {
+      const posts = await fetchAllPublishedPosts(siteUrl, username, appPassword, restBase)
       for (const post of posts) {
+        if (isSitemapExcluded(post)) {
+          skipped += 1
+          continue
+        }
         const parsed = parseWpPost(post, metaKeys)
         const { error: upErr } = await service.from('asset_pages').upsert(
           {
@@ -85,7 +94,13 @@ async function syncOneAsset(
       .eq('id', conn.id)
     await service.from('assets').update({ wp_cli_status: 'connected' }).eq('id', assetId)
 
-    return { asset_id: assetId, ok: true, pages_upserted: upserted }
+    return {
+      asset_id: assetId,
+      ok: true,
+      pages_upserted: upserted,
+      pages_skipped: skipped,
+      post_types: typeInfos.map((t) => t.slug),
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Sync failed'
     await service

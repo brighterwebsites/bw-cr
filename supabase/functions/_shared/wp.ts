@@ -7,6 +7,7 @@ export const DEFAULT_WP_META_KEYS = [
   'scos_seo_tldr',
   'scos_seo_robots',
   'scos_seo_canonical',
+  'scos_seo_sitemap_exclude',
   'scos_ca_index_status',
   'scos_ca_purpose',
   'scos_ca_intent',
@@ -38,6 +39,12 @@ export type WpPostRow = {
     'wp:term'?: Array<Array<{ taxonomy?: string; slug?: string }>>
   }
 }
+
+/** Post types that must never sync into asset_pages, on any site, regardless of asset config. */
+export const GLOBAL_EXCLUDED_POST_TYPES = ['bw_reviews'] as const
+
+/** SCOS post-meta flag — when truthy, the page is deliberately kept out of the sitemap/index. */
+export const SITEMAP_EXCLUDE_META_KEY = 'scos_seo_sitemap_exclude'
 
 export function normalizeSiteUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '')
@@ -97,11 +104,84 @@ export async function testWpConnection(
   }
 }
 
+export type WpTypeInfo = {
+  slug: string
+  restBase: string
+}
+
+type WpTypesResponse = Record<
+  string,
+  {
+    slug?: string
+    rest_base?: string
+    visibility?: { public?: boolean; publicly_queryable?: boolean }
+  }
+>
+
+/** Discover REST-exposed post types via /wp/v2/types (WP only exposes show_in_rest types here). */
+export async function fetchPublicPostTypes(
+  siteUrl: string,
+  username: string,
+  appPassword: string,
+): Promise<WpTypeInfo[]> {
+  const base = normalizeSiteUrl(siteUrl)
+  const res = await fetch(`${base}/wp-json/wp/v2/types`, {
+    headers: {
+      Authorization: basicAuthHeader(username, appPassword),
+      Accept: 'application/json',
+    },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch post types (HTTP ${res.status})`)
+  }
+  const json = (await res.json()) as WpTypesResponse
+  const types: WpTypeInfo[] = []
+  for (const [slug, info] of Object.entries(json)) {
+    // Some plugins register admin-only REST types; skip if explicitly marked non-public.
+    if (info.visibility && info.visibility.public === false) continue
+    types.push({ slug, restBase: info.rest_base ?? restBaseForPostType(slug) })
+  }
+  return types
+}
+
+/**
+ * Resolve which post types to sync for an asset: auto-discovered public REST types by default,
+ * narrowed to an explicit per-asset allow-list if provided — always minus the global excludes.
+ */
+export async function resolvePostTypesToSync(
+  siteUrl: string,
+  username: string,
+  appPassword: string,
+  configPostTypes?: string[],
+): Promise<WpTypeInfo[]> {
+  const excluded = new Set<string>(GLOBAL_EXCLUDED_POST_TYPES)
+  const discovered = await fetchPublicPostTypes(siteUrl, username, appPassword)
+  const discoveredBySlug = new Map(discovered.map((t) => [t.slug, t]))
+
+  if (configPostTypes?.length) {
+    return configPostTypes
+      .filter((slug) => !excluded.has(slug))
+      .map((slug) => discoveredBySlug.get(slug) ?? { slug, restBase: restBaseForPostType(slug) })
+  }
+
+  return discovered.filter((t) => !excluded.has(t.slug))
+}
+
+/** True when SCOS has flagged this page to be kept out of the sitemap/index. */
+export function isSitemapExcluded(post: WpPostRow): boolean {
+  const raw = post.meta?.[SITEMAP_EXCLUDE_META_KEY]
+  if (raw == null) return false
+  if (typeof raw === 'boolean') return raw
+  if (typeof raw === 'number') return raw === 1
+  if (typeof raw === 'string') return ['1', 'true', 'yes'].includes(raw.toLowerCase())
+  return false
+}
+
 export async function fetchAllPublishedPosts(
   siteUrl: string,
   username: string,
   appPassword: string,
-  postType: string,
+  restBase: string,
 ): Promise<WpPostRow[]> {
   const base = normalizeSiteUrl(siteUrl)
   const auth = basicAuthHeader(username, appPassword)
@@ -110,7 +190,6 @@ export async function fetchAllPublishedPosts(
   let totalPages = 1
 
   while (page <= totalPages) {
-    const restBase = restBaseForPostType(postType)
     const url = new URL(`${base}/wp-json/wp/v2/${restBase}`)
     url.searchParams.set('status', 'publish')
     url.searchParams.set('per_page', '100')

@@ -15,6 +15,7 @@ function configFromConn(
   return {
     siteUrl: config.site_url ?? asset.asset_url ?? '',
     username: config.wp_username ?? '',
+    postTypes: config.post_types?.length ? config.post_types.join(', ') : '',
   }
 }
 
@@ -27,6 +28,7 @@ export function WpIntegrationSection({ asset }: Props) {
   const config = (conn?.config ?? {}) as WpConnectionConfig
   const [siteUrl, setSiteUrl] = useState(() => configFromConn(conn, asset).siteUrl)
   const [username, setUsername] = useState(() => configFromConn(conn, asset).username)
+  const [postTypes, setPostTypes] = useState(() => configFromConn(conn, asset).postTypes)
   const [appPassword, setAppPassword] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -36,6 +38,7 @@ export function WpIntegrationSection({ asset }: Props) {
     const next = configFromConn(conn, asset)
     setSiteUrl(next.siteUrl)
     setUsername(next.username)
+    setPostTypes(next.postTypes)
   }, [conn?.id, conn?.config, asset.id, asset.asset_url])
 
   const hasStoredCredentials = conn?.status === 'connected'
@@ -55,7 +58,7 @@ export function WpIntegrationSection({ asset }: Props) {
   }
 
   const postTypesLabel = useMemo(
-    () => (config.post_types?.length ? config.post_types.join(', ') : 'post'),
+    () => (config.post_types?.length ? config.post_types.join(', ') : 'all public types (auto-detected)'),
     [config.post_types],
   )
 
@@ -73,8 +76,9 @@ export function WpIntegrationSection({ asset }: Props) {
       </div>
 
       <p className="mutedtext" style={{ fontSize: 12, margin: '0 0 12px' }}>
-        Managed pages registry — syncs published <strong>{postTypesLabel}</strong> only. GSC
-        metrics attach in the next phase.
+        Managed pages registry — syncs published <strong>{postTypesLabel}</strong>. Always
+        excludes <code>bw_reviews</code> and any page flagged{' '}
+        <code>scos_seo_sitemap_exclude</code>. GSC metrics attach in the next phase.
       </p>
 
       {conn?.last_error && (
@@ -101,6 +105,20 @@ export function WpIntegrationSection({ asset }: Props) {
           onChange={(e) => setSiteUrl(e.target.value)}
           placeholder="https://example.com.au"
         />
+      </div>
+
+      <div className="jdp-field jdp-full">
+        <span className="jdp-label">Post types to sync (optional)</span>
+        <input
+          className="jdp-input"
+          value={postTypes}
+          onChange={(e) => setPostTypes(e.target.value)}
+          placeholder="Leave blank to auto-detect all public post types"
+        />
+        <span className="mutedtext" style={{ fontSize: 11 }}>
+          Comma-separated slugs (e.g. <code>post, page, service</code>). Restricts sync to
+          these types only — <code>bw_reviews</code> is excluded either way.
+        </span>
       </div>
 
       <div className="jdp-2col">
@@ -144,9 +162,14 @@ export function WpIntegrationSection({ asset }: Props) {
           disabled={Boolean(busy) || !canSaveConfig}
           onClick={() =>
             void run('save', async () => {
+              const parsedPostTypes = postTypes
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
               await saveWordPressConfig(asset.id, {
                 siteUrl: siteUrl.trim(),
                 wpUsername: username.trim(),
+                postTypes: parsedPostTypes,
               })
               setMsg('Settings saved')
             })
@@ -186,8 +209,10 @@ export function WpIntegrationSection({ asset }: Props) {
             disabled={Boolean(busy)}
             onClick={() =>
               void run('sync', async () => {
-                const count = await syncWpPages(asset.id)
-                setMsg(`Synced ${count} page(s)`)
+                const { upserted, skipped, postTypes } = await syncWpPages(asset.id)
+                const skippedText = skipped ? `, skipped ${skipped}` : ''
+                const typesText = postTypes.length ? ` (${postTypes.join(', ')})` : ''
+                setMsg(`Synced ${upserted} page(s)${skippedText}${typesText}`)
               })
             }
           >

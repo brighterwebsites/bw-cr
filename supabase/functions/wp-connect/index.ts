@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
     site_url?: string
     wp_username?: string
     wp_app_password?: string
+    post_types?: string[]
   }
   try {
     body = await req.json()
@@ -90,11 +91,14 @@ Deno.serve(async (req) => {
   }
 
   const priorConfig = (existingConn?.config ?? {}) as WpConnectionConfig
+  // post_types stays unset by default — wp-sync-pages then auto-discovers all public
+  // REST-exposed types (minus the global exclude list) instead of only pulling `post`.
+  const postTypes = body.post_types?.length ? body.post_types : priorConfig.post_types
   const config: WpConnectionConfig = {
     ...priorConfig,
     site_url: normalizeSiteUrl(siteUrl),
     wp_username: wpUsername,
-    post_types: priorConfig.post_types?.length ? priorConfig.post_types : ['post'],
+    ...(postTypes?.length ? { post_types: postTypes } : {}),
     meta_keys: priorConfig.meta_keys?.length ? priorConfig.meta_keys : [...DEFAULT_WP_META_KEYS],
     taxonomies: priorConfig.taxonomies?.length
       ? priorConfig.taxonomies
