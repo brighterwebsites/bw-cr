@@ -7,6 +7,7 @@ import CustomersPage from './CustomersPage'
 import AssetsPage from './AssetsPage'
 import TasksPage from './TasksPage'
 import SeoPage from './SeoPage'
+import SettingsPage from './SettingsPage'
 
 export default function Shell() {
   return (
@@ -76,6 +77,7 @@ function ShellInner() {
             <NavItem p="assets" icon="🌐" label="Assets" />
             <div className="sidebar-section">{sidebarOpen ? 'SEO' : '·'}</div>
             <NavItem p="seo" icon="📈" label="SEO" />
+            <NavItem p="settings" icon="🔧" label="Settings" />
           </nav>
         </aside>
 
@@ -85,6 +87,7 @@ function ShellInner() {
           {page === 'tasks' && <TasksPage />}
           {page === 'assets' && <AssetsPage />}
           {page === 'seo' && <SeoPage />}
+          {page === 'settings' && <SettingsPage />}
         </main>
       </div>
     </div>

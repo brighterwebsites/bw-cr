@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 
-export type Page = 'pipeline' | 'customers' | 'tasks' | 'assets' | 'seo'
+export type Page = 'pipeline' | 'customers' | 'tasks' | 'assets' | 'seo' | 'settings'
 
 export type SeoTab = 'performance' | 'opportunities' | 'pages'
 
