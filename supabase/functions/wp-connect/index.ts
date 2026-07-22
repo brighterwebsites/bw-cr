@@ -52,13 +52,8 @@ Deno.serve(async (req) => {
   const wpUsername = body.wp_username?.trim()
   const wpAppPassword = body.wp_app_password?.trim()
 
-  if (!assetId || !siteUrl || !wpUsername || !wpAppPassword) {
-    return jsonResponse({ error: 'asset_id, site_url, wp_username, wp_app_password required' }, 400)
-  }
-
-  const test = await testWpConnection(siteUrl, wpUsername, wpAppPassword)
-  if (!test.ok) {
-    return jsonResponse({ error: test.error }, 400)
+  if (!assetId || !siteUrl || !wpUsername) {
+    return jsonResponse({ error: 'asset_id, site_url, wp_username required' }, 400)
   }
 
   const service = createClient(
@@ -66,11 +61,44 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
+  const { data: existingConn } = await service
+    .from('asset_connections')
+    .select('id, config')
+    .eq('asset_id', assetId)
+    .eq('provider', 'wordpress')
+    .maybeSingle()
+
+  let appPassword = wpAppPassword ?? ''
+  if (!appPassword) {
+    if (!existingConn) {
+      return jsonResponse({ error: 'wp_app_password required for first connect' }, 400)
+    }
+    const { data: secretRow } = await service
+      .from('asset_connection_secrets')
+      .select('wp_app_password')
+      .eq('asset_connection_id', existingConn.id)
+      .maybeSingle()
+    appPassword = secretRow?.wp_app_password ?? ''
+    if (!appPassword) {
+      return jsonResponse({ error: 'wp_app_password required — no stored credentials' }, 400)
+    }
+  }
+
+  const test = await testWpConnection(siteUrl, wpUsername, appPassword)
+  if (!test.ok) {
+    return jsonResponse({ error: test.error }, 400)
+  }
+
+  const priorConfig = (existingConn?.config ?? {}) as WpConnectionConfig
   const config: WpConnectionConfig = {
+    ...priorConfig,
     site_url: normalizeSiteUrl(siteUrl),
-    post_types: ['post'],
-    meta_keys: [...DEFAULT_WP_META_KEYS],
-    taxonomies: [...DEFAULT_WP_TAXONOMIES],
+    wp_username: wpUsername,
+    post_types: priorConfig.post_types?.length ? priorConfig.post_types : ['post'],
+    meta_keys: priorConfig.meta_keys?.length ? priorConfig.meta_keys : [...DEFAULT_WP_META_KEYS],
+    taxonomies: priorConfig.taxonomies?.length
+      ? priorConfig.taxonomies
+      : [...DEFAULT_WP_TAXONOMIES],
   }
 
   const { data: conn, error: connErr } = await service
@@ -97,7 +125,7 @@ Deno.serve(async (req) => {
     asset_connection_id: conn.id,
     refresh_token: null,
     wp_username: wpUsername,
-    wp_app_password: wpAppPassword,
+    wp_app_password: appPassword,
   })
   if (secErr) {
     return jsonResponse({ error: secErr.message }, 500)

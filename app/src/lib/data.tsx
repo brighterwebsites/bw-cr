@@ -75,8 +75,12 @@ interface DataState {
     assetId: number
     siteUrl: string
     wpUsername: string
-    wpAppPassword: string
+    wpAppPassword?: string
   }) => Promise<void>
+  saveWordPressConfig: (
+    assetId: number,
+    patch: { siteUrl: string; wpUsername: string },
+  ) => Promise<void>
   syncWpPages: (assetId?: number) => Promise<number>
   updateAssetPagePriority: (pageId: number, isPriority: boolean) => Promise<void>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
@@ -477,21 +481,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await refresh()
   }, [refresh])
 
+  const saveWordPressConfig = useCallback(
+    async (assetId: number, patch: { siteUrl: string; wpUsername: string }) => {
+      const siteUrl = patch.siteUrl.trim().replace(/\/+$/, '')
+      const wpUsername = patch.wpUsername.trim()
+      const { data: existing, error: getErr } = await supabase
+        .from('asset_connections')
+        .select('config, status')
+        .eq('asset_id', assetId)
+        .eq('provider', 'wordpress')
+        .maybeSingle()
+      if (getErr) throw new Error(getErr.message)
+
+      const config = {
+        ...((existing?.config as Record<string, unknown>) ?? {}),
+        site_url: siteUrl,
+        wp_username: wpUsername,
+        post_types: ['post'],
+      }
+
+      const { error: upsErr } = await supabase.from('asset_connections').upsert(
+        {
+          asset_id: assetId,
+          provider: 'wordpress',
+          status: existing?.status ?? 'unknown',
+          config,
+          secret_ref: '',
+          last_error: '',
+        },
+        { onConflict: 'asset_id,provider' },
+      )
+      if (upsErr) throw new Error(upsErr.message)
+      await refresh()
+    },
+    [refresh],
+  )
+
   const connectWordPress = useCallback(
     async (input: {
       assetId: number
       siteUrl: string
       wpUsername: string
-      wpAppPassword: string
+      wpAppPassword?: string
     }) => {
-      const { data, error: fnErr } = await supabase.functions.invoke('wp-connect', {
-        body: {
-          asset_id: input.assetId,
-          site_url: input.siteUrl,
-          wp_username: input.wpUsername,
-          wp_app_password: input.wpAppPassword,
-        },
-      })
+      const body: Record<string, unknown> = {
+        asset_id: input.assetId,
+        site_url: input.siteUrl,
+        wp_username: input.wpUsername,
+      }
+      if (input.wpAppPassword?.trim()) {
+        body.wp_app_password = input.wpAppPassword.trim()
+      }
+      const { data, error: fnErr } = await supabase.functions.invoke('wp-connect', { body })
       if (fnErr) throw new Error(fnErr.message)
       if (data && typeof data === 'object' && 'error' in data && data.error) {
         throw new Error(String(data.error))
@@ -556,6 +597,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveGscProperty,
       pullGscMetrics,
       connectWordPress,
+      saveWordPressConfig,
       syncWpPages,
       updateAssetPagePriority,
       updateProject,
@@ -592,6 +634,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveGscProperty,
       pullGscMetrics,
       connectWordPress,
+      saveWordPressConfig,
       syncWpPages,
       updateAssetPagePriority,
       updateProject,

@@ -7,25 +7,39 @@ type Props = {
   asset: Asset
 }
 
+function configFromConn(
+  conn: { config: Record<string, unknown> } | undefined,
+  asset: Asset,
+) {
+  const config = (conn?.config ?? {}) as WpConnectionConfig
+  return {
+    siteUrl: config.site_url ?? asset.asset_url ?? '',
+    username: config.wp_username ?? '',
+  }
+}
+
 export function WpIntegrationSection({ asset }: Props) {
-  const { assetConnections, connectWordPress, syncWpPages } = useData()
+  const { assetConnections, connectWordPress, saveWordPressConfig, syncWpPages } = useData()
 
   const conn = assetConnections.find(
     (c) => c.asset_id === asset.id && c.provider === 'wordpress',
   )
   const config = (conn?.config ?? {}) as WpConnectionConfig
-  const [siteUrl, setSiteUrl] = useState(config.site_url ?? asset.asset_url ?? '')
-  const [username, setUsername] = useState('')
+  const [siteUrl, setSiteUrl] = useState(() => configFromConn(conn, asset).siteUrl)
+  const [username, setUsername] = useState(() => configFromConn(conn, asset).username)
   const [appPassword, setAppPassword] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
-    setSiteUrl((conn?.config as WpConnectionConfig)?.site_url ?? asset.asset_url ?? '')
-  }, [conn?.id, conn?.config, asset.asset_url])
+    const next = configFromConn(conn, asset)
+    setSiteUrl(next.siteUrl)
+    setUsername(next.username)
+  }, [conn?.id, conn?.config, asset.id, asset.asset_url])
 
-  const isConnected = conn?.status === 'connected' && Boolean(config.site_url)
+  const hasStoredCredentials = conn?.status === 'connected'
+  const isConnected = hasStoredCredentials && Boolean(config.site_url)
 
   async function run(label: string, fn: () => Promise<void>) {
     setBusy(label)
@@ -44,6 +58,10 @@ export function WpIntegrationSection({ asset }: Props) {
     () => (config.post_types?.length ? config.post_types.join(', ') : 'post'),
     [config.post_types],
   )
+
+  const canSaveConfig = Boolean(siteUrl.trim() && username.trim())
+  const canConnect =
+    canSaveConfig && (Boolean(appPassword.trim()) || hasStoredCredentials)
 
   return (
     <div className="gsc-integration wp-integration">
@@ -93,7 +111,7 @@ export function WpIntegrationSection({ asset }: Props) {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="api-user"
-            autoComplete="off"
+            autoComplete="username"
           />
         </div>
         <div className="jdp-field">
@@ -103,7 +121,11 @@ export function WpIntegrationSection({ asset }: Props) {
             type="password"
             value={appPassword}
             onChange={(e) => setAppPassword(e.target.value)}
-            placeholder={isConnected ? '••••••••••••••••' : 'xxxx xxxx xxxx xxxx'}
+            placeholder={
+              hasStoredCredentials
+                ? 'Leave blank to keep saved password'
+                : 'xxxx xxxx xxxx xxxx'
+            }
             autoComplete="new-password"
           />
         </div>
@@ -118,22 +140,43 @@ export function WpIntegrationSection({ asset }: Props) {
       <div className="gsc-integration-actions">
         <button
           type="button"
+          className="btn btn-gray"
+          disabled={Boolean(busy) || !canSaveConfig}
+          onClick={() =>
+            void run('save', async () => {
+              await saveWordPressConfig(asset.id, {
+                siteUrl: siteUrl.trim(),
+                wpUsername: username.trim(),
+              })
+              setMsg('Settings saved')
+            })
+          }
+        >
+          {busy === 'save' ? 'Saving…' : 'Save settings'}
+        </button>
+
+        <button
+          type="button"
           className="btn btn-primary"
-          disabled={Boolean(busy) || !siteUrl.trim() || !username.trim() || !appPassword.trim()}
+          disabled={Boolean(busy) || !canConnect}
           onClick={() =>
             void run('connect', async () => {
               await connectWordPress({
                 assetId: asset.id,
                 siteUrl: siteUrl.trim(),
                 wpUsername: username.trim(),
-                wpAppPassword: appPassword.trim(),
+                wpAppPassword: appPassword.trim() || undefined,
               })
               setAppPassword('')
-              setMsg('WordPress connected')
+              setMsg(hasStoredCredentials ? 'Credentials verified' : 'WordPress connected')
             })
           }
         >
-          {busy === 'connect' ? 'Connecting…' : isConnected ? 'Update connection' : 'Connect WordPress'}
+          {busy === 'connect'
+            ? 'Connecting…'
+            : hasStoredCredentials
+              ? 'Verify / update credentials'
+              : 'Connect WordPress'}
         </button>
 
         {isConnected && (

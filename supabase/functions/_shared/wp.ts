@@ -21,6 +21,7 @@ export const DEFAULT_WP_TAXONOMIES = ['scos_topic', 'scos_content_cluster'] as c
 
 export type WpConnectionConfig = {
   site_url?: string
+  wp_username?: string
   post_types?: string[]
   meta_keys?: string[]
   taxonomies?: string[]

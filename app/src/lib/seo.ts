@@ -39,6 +39,7 @@ export type GscConnectionConfig = {
 
 export type WpConnectionConfig = {
   site_url?: string
+  wp_username?: string
   post_types?: string[]
   meta_keys?: string[]
   taxonomies?: string[]
