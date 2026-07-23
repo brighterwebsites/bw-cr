@@ -19,12 +19,14 @@ import type {
   ProjectStage,
   Task,
 } from './pipeline'
-import type {
-  AssetConnection,
-  AssetPage,
-  MetricsSnapshot,
-  PageMetricsCurrent,
-  SeoOpportunity,
+import {
+  OPPORTUNITY_TYPE_LABEL,
+  pluralizePostTypeLabel,
+  type AssetConnection,
+  type AssetPage,
+  type MetricsSnapshot,
+  type PageMetricsCurrent,
+  type SeoOpportunity,
 } from './seo'
 
 export type {
@@ -100,7 +102,7 @@ interface DataState {
   }>
   pullGscPageMetrics: (assetId?: number) => Promise<number>
   dismissSeoOpportunity: (opportunityId: number) => Promise<void>
-  promoteSeoOpportunityToTask: (opportunityId: number) => Promise<void>
+  createTasksFromOpportunities: (opportunityIds: number[]) => Promise<number>
   updateProject: (id: number, patch: Partial<Project>) => Promise<void>
   createProject: (row: TablesInsert<'projects'>) => Promise<Project>
   updateCustomer: (id: number, patch: CustomerUpdate) => Promise<Customer>
@@ -717,42 +719,86 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [refreshSeoOpportunities],
   )
 
-  const promoteSeoOpportunityToTask = useCallback(
-    async (opportunityId: number) => {
-      const opp = seoOpportunities.find((o) => o.id === opportunityId)
-      if (!opp) throw new Error('Opportunity not found')
-      const page = assetPages.find((p) => p.id === opp.asset_page_id)
-      const asset = assets.find((a) => a.id === opp.asset_id)
+  const createTasksFromOpportunities = useCallback(
+    async (opportunityIds: number[]) => {
+      const selected = seoOpportunities.filter((o) => opportunityIds.includes(o.id))
+      if (!selected.length) return 0
 
-      const { data: task, error: taskErr } = await supabase
-        .from('tasks')
-        .insert({
-          title: opp.problem.slice(0, 240),
-          notes: [opp.recommended_workflow, page ? `Page: ${page.url_path}` : '']
-            .filter(Boolean)
-            .join('\n\n'),
-          asset_id: opp.asset_id,
-          customer_id: asset?.customer_id ?? null,
-          project_id: asset?.project_id ?? null,
-          page_url: page?.url_path ?? '',
-          seo_opportunity_id: opp.id,
-          status: 'not_started',
-          task_type: 'task',
-        })
-        .select('*')
-        .single()
-      if (taskErr) throw new Error(taskErr.message)
+      // One task per (asset, opportunity type, WP post type) — keeps each task's
+      // instructions/skill homogeneous instead of mixing e.g. blog posts and product pages.
+      const groups = new Map<string, SeoOpportunity[]>()
+      for (const opp of selected) {
+        const postType = assetPages.find((p) => p.id === opp.asset_page_id)?.wp_post_type || 'page'
+        const key = `${opp.asset_id}::${opp.opportunity_type}::${postType}`
+        const arr = groups.get(key) ?? []
+        arr.push(opp)
+        groups.set(key, arr)
+      }
 
-      const { error: oppErr } = await supabase
-        .from('seo_opportunities')
-        .update({
-          status: 'task_created',
-          task_id: task.id,
+      let created = 0
+      for (const [key, opps] of groups) {
+        const [assetIdStr, opportunityType, postType] = key.split('::')
+        const assetId = Number(assetIdStr)
+        const asset = assets.find((a) => a.id === assetId)
+        const items = opps.map((opp) => ({
+          opp,
+          page: assetPages.find((p) => p.id === opp.asset_page_id),
+        }))
+
+        const typeLabel = OPPORTUNITY_TYPE_LABEL[opportunityType] ?? opportunityType
+        const postTypeLabel = pluralizePostTypeLabel(postType, items.length)
+        const title = `Fix ${typeLabel} — ${items.length} ${postTypeLabel}`.slice(0, 240)
+        const workflow = items[0]?.opp.recommended_workflow ?? ''
+
+        const pageLines = items.map(({ opp, page }) => {
+          const idPart = page?.wp_post_id ? ` (Post ${page.wp_post_id})` : ''
+          return `- ${page?.url_path ?? `asset_page #${opp.asset_page_id}`}${idPart}`
         })
-        .eq('id', opp.id)
-      if (oppErr) throw new Error(oppErr.message)
+        const notes = [pageLines.join('\n'), workflow ? `Recommended action: ${workflow}` : '']
+          .filter(Boolean)
+          .join('\n\n')
+
+        const agentNote = [
+          `opportunity_type: ${opportunityType}`,
+          `post_type: ${postType}`,
+          `workflow: ${workflow}`,
+          'pages:',
+          ...items.map(
+            ({ page }) => `  - post_id: ${page?.wp_post_id ?? ''}, url: ${page?.url_path ?? ''}`,
+          ),
+        ].join('\n')
+
+        const { data: task, error: taskErr } = await supabase
+          .from('tasks')
+          .insert({
+            title,
+            notes,
+            agent_note: agentNote,
+            asset_id: assetId,
+            customer_id: asset?.customer_id ?? null,
+            project_id: asset?.project_id ?? null,
+            page_url: items[0]?.page?.url_path ?? '',
+            status: 'not_started',
+            task_type: 'task',
+          })
+          .select('*')
+          .single()
+        if (taskErr) throw new Error(taskErr.message)
+
+        const { error: oppErr } = await supabase
+          .from('seo_opportunities')
+          .update({ status: 'task_created', task_id: task.id })
+          .in(
+            'id',
+            items.map(({ opp }) => opp.id),
+          )
+        if (oppErr) throw new Error(oppErr.message)
+
+        created += 1
+      }
 
       await refresh()
+      return created
     },
     [seoOpportunities, assetPages, assets, refresh],
   )
@@ -785,7 +831,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       runSeoScan,
       pullGscPageMetrics,
       dismissSeoOpportunity,
-      promoteSeoOpportunityToTask,
+      createTasksFromOpportunities,
       updateProject,
       createProject,
       updateCustomer,
@@ -828,7 +874,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       runSeoScan,
       pullGscPageMetrics,
       dismissSeoOpportunity,
-      promoteSeoOpportunityToTask,
+      createTasksFromOpportunities,
       updateProject,
       createProject,
       updateCustomer,

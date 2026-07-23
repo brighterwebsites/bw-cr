@@ -114,6 +114,17 @@ export const OPPORTUNITY_TYPE_LABEL: Record<string, string> = {
   striking_distance: 'Striking distance',
 }
 
+/** Naive pluralization for WP post type slugs (post -> Posts, page -> Pages, custom_type -> Custom Types). */
+export function pluralizePostTypeLabel(postType: string, count: number): string {
+  const label = (postType || 'page')
+    .split(/[_-]/)
+    .filter(Boolean)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(' ')
+  if (count === 1) return label
+  return label.endsWith('s') ? label : `${label}s`
+}
+
 /** Managed sites for SEO views — include website until seed uses managed_website. */
 export function isSeoMonitoredAsset(a: Asset): boolean {
   return (

@@ -8,6 +8,7 @@ type TaskType = Task['task_type']
 type TaskForm = {
   title: string
   notes: string
+  agent_note: string
   status: TaskStatus
   task_type: TaskType
   due_on: string
@@ -20,6 +21,7 @@ type TaskForm = {
 const BLANK: TaskForm = {
   title: '',
   notes: '',
+  agent_note: '',
   status: 'not_started',
   task_type: 'task',
   due_on: '',
@@ -33,6 +35,7 @@ function formFromTask(t: Task): TaskForm {
   return {
     title: t.title,
     notes: t.notes,
+    agent_note: t.agent_note ?? '',
     status: t.status,
     task_type: t.task_type,
     due_on: t.due_on ?? '',
@@ -47,6 +50,7 @@ function toPayload(form: TaskForm) {
   return {
     title: form.title.trim(),
     notes: form.notes,
+    agent_note: form.agent_note,
     status: form.status,
     task_type: form.task_type,
     due_on: form.due_on || null,
@@ -291,6 +295,16 @@ export default function TaskDetailPanel({
               rows={4}
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
+            />
+          </div>
+          <div className="jdp-field jdp-full">
+            <span className="jdp-label">Agent note</span>
+            <textarea
+              className="jdp-input jdp-textarea"
+              rows={3}
+              placeholder="Context for whoever/whatever executes this — post IDs, skill hints, constraints…"
+              value={form.agent_note}
+              onChange={(e) => set('agent_note', e.target.value)}
             />
           </div>
         </div>

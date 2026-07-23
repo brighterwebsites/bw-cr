@@ -1816,6 +1816,8 @@ a {
 
 .seo-pages-table-wrap {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 72vh;
   padding: 0;
 }
 
@@ -1823,6 +1825,12 @@ a {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+}
+
+.seo-pages-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 .seo-pages-table th,
@@ -1905,4 +1913,57 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.seo-titlepath {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 280px;
+}
+
+.seo-titlepath-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.seo-titlepath-path {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--muted, #54636b);
+  word-break: break-all;
+}
+
+.seo-titlepath-path a {
+  color: inherit;
+}
+
+.seo-opp-select-col {
+  width: 28px;
+}
+
+.seo-opp-batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.seo-opp-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  color: var(--muted, #54636b);
+  display: inline-flex;
+  align-items: center;
+}
+
+.seo-opp-icon-btn:hover {
+  color: #c0392b;
+}
+
+.seo-opp-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

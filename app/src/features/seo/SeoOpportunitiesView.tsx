@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useData } from '../../lib/data'
 import { useAppNav } from '../../lib/nav'
 import { AssetFilterBar } from './AssetFilterBar'
+import type { AssetPage } from '../../lib/seo'
 import {
   assetDotColor,
   fmtCtr,
@@ -29,13 +30,15 @@ export function SeoOpportunitiesView() {
     loading,
     runSeoScan,
     dismissSeoOpportunity,
-    promoteSeoOpportunityToTask,
+    createTasksFromOpportunities,
   } = useData()
   const { openAssetRecord } = useAppNav()
   const [filter, setFilter] = useState<number | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all')
   const [scanning, setScanning] = useState(false)
   const [busyId, setBusyId] = useState<number | null>(null)
+  const [batching, setBatching] = useState(false)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
   const [err, setErr] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
 
@@ -59,6 +62,57 @@ export function SeoOpportunitiesView() {
     if (priorityFilter !== 'all') rows = rows.filter((o) => o.priority === priorityFilter)
     return [...rows].sort((a, b) => Number(b.impressions) - Number(a.impressions))
   }, [seoOpportunities, filter, priorityFilter])
+
+  const openVisible = useMemo(() => visible.filter((o) => o.status === 'open'), [visible])
+
+  // Drop selections that scrolled out of view/filter so the count stays accurate.
+  useEffect(() => {
+    setSelected((prev) => {
+      const openIds = new Set(openVisible.map((o) => o.id))
+      const next = new Set([...prev].filter((id) => openIds.has(id)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [openVisible])
+
+  const selectedGroupCount = useMemo(() => {
+    const groups = new Set<string>()
+    for (const opp of visible) {
+      if (!selected.has(opp.id)) continue
+      const postType = pageById.get(opp.asset_page_id)?.wp_post_type || 'page'
+      groups.add(`${opp.asset_id}::${opp.opportunity_type}::${postType}`)
+    }
+    return groups.size
+  }, [visible, selected, pageById])
+
+  function toggleSelected(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    setSelected((prev) =>
+      prev.size === openVisible.length ? new Set() : new Set(openVisible.map((o) => o.id)),
+    )
+  }
+
+  async function handleCreateTasks() {
+    setBatching(true)
+    setErr(null)
+    setMsg(null)
+    try {
+      const created = await createTasksFromOpportunities([...selected])
+      setMsg(`Created ${created} task${created === 1 ? '' : 's'} from ${selected.size} opportunit${selected.size === 1 ? 'y' : 'ies'}`)
+      setSelected(new Set())
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Task creation failed')
+    } finally {
+      setBatching(false)
+    }
+  }
 
   async function handleScan() {
     setScanning(true)
@@ -135,11 +189,37 @@ export function SeoOpportunitiesView() {
         </span>
       </div>
 
+      <div className="seo-opp-batch-bar">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={!selected.size || batching}
+          onClick={() => void handleCreateTasks()}
+        >
+          {batching
+            ? 'Creating…'
+            : `Create ${selectedGroupCount || ''} task${selectedGroupCount === 1 ? '' : 's'} from ${selected.size} selected`}
+        </button>
+        {selected.size > 0 && (
+          <button type="button" className="btn-link" onClick={() => setSelected(new Set())}>
+            Clear selection
+          </button>
+        )}
+      </div>
+
       {visible.length > 0 ? (
         <div className="card seo-pages-table-wrap">
           <table className="seo-pages-table seo-opp-table">
             <thead>
               <tr>
+                <th className="seo-opp-select-col">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all open opportunities"
+                    checked={openVisible.length > 0 && selected.size === openVisible.length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 <th>Asset</th>
                 <th>Page</th>
                 <th>Problem</th>
@@ -159,14 +239,13 @@ export function SeoOpportunitiesView() {
                 <OppRow
                   key={o.id}
                   opp={o}
+                  page={pageById.get(o.asset_page_id)}
                   assetName={assetNameById.get(o.asset_id) ?? `#${o.asset_id}`}
-                  pagePath={pageById.get(o.asset_page_id)?.url_path ?? '—'}
                   dotColor={assetDotColor(o.asset_id, monitoredIds)}
                   busy={busyId === o.id}
+                  selected={selected.has(o.id)}
+                  onToggleSelected={() => toggleSelected(o.id)}
                   onOpenAsset={() => openAssetRecord(o.asset_id)}
-                  onCreateTask={() =>
-                    void runRowAction(o.id, () => promoteSeoOpportunityToTask(o.id))
-                  }
                   onDismiss={() =>
                     void runRowAction(o.id, () => dismissSeoOpportunity(o.id))
                   }
@@ -188,34 +267,69 @@ export function SeoOpportunitiesView() {
   )
 }
 
+function DismissIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  )
+}
+
 function OppRow({
   opp,
+  page,
   assetName,
-  pagePath,
   dotColor,
   busy,
+  selected,
+  onToggleSelected,
   onOpenAsset,
-  onCreateTask,
   onDismiss,
 }: {
   opp: SeoOpportunity
+  page: AssetPage | undefined
   assetName: string
-  pagePath: string
   dotColor: string
   busy: boolean
+  selected: boolean
+  onToggleSelected: () => void
   onOpenAsset: () => void
-  onCreateTask: () => void
   onDismiss: () => void
 }) {
+  const isOpen = opp.status === 'open'
   return (
     <tr>
+      <td>
+        {isOpen && (
+          <input
+            type="checkbox"
+            aria-label={`Select opportunity on ${page?.url_path ?? 'page'}`}
+            checked={selected}
+            onChange={onToggleSelected}
+          />
+        )}
+      </td>
       <td>
         <button type="button" className="btn-link seo-pages-asset-link" onClick={onOpenAsset}>
           <span className="seo-dot" style={{ background: dotColor }} />
           {assetName}
         </button>
       </td>
-      <td className="seo-pages-path">{pagePath}</td>
+      <td>
+        <div className="seo-titlepath">
+          <span className="seo-titlepath-title">{page?.title || '—'}</span>
+          <span className="seo-titlepath-path">
+            {page?.canonical_url ? (
+              <a href={page.canonical_url} target="_blank" rel="noreferrer">
+                {page.url_path}
+              </a>
+            ) : (
+              page?.url_path ?? '—'
+            )}
+          </span>
+        </div>
+      </td>
       <td className="seo-opp-problem">{opp.problem}</td>
       <td>{OPPORTUNITY_TYPE_LABEL[opp.opportunity_type] ?? opp.opportunity_type}</td>
       <td>
@@ -230,15 +344,16 @@ function OppRow({
       <td>{opp.recommended_workflow}</td>
       <td>{opp.status}</td>
       <td className="seo-opp-actions">
-        {opp.status === 'open' && (
-          <>
-            <button type="button" className="btn-link" disabled={busy} onClick={onCreateTask}>
-              Create task
-            </button>
-            <button type="button" className="btn-link" disabled={busy} onClick={onDismiss}>
-              Dismiss
-            </button>
-          </>
+        {isOpen && (
+          <button
+            type="button"
+            className="seo-opp-icon-btn"
+            disabled={busy}
+            title="Dismiss (reappears on next sync if still an issue)"
+            onClick={onDismiss}
+          >
+            <DismissIcon />
+          </button>
         )}
         {opp.status === 'task_created' && <span className="mutedtext">Task linked</span>}
       </td>
