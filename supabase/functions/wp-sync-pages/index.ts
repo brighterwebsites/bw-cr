@@ -58,34 +58,47 @@ async function syncOneAsset(
 
     const typeInfos = await resolvePostTypesToSync(siteUrl, username, appPassword, config.post_types)
 
-    for (const { restBase } of typeInfos) {
-      const posts = await fetchAllPublishedPosts(siteUrl, username, appPassword, restBase)
+    // Fetch every post type concurrently — sequential awaits here is what previously
+    // pushed multi-type syncs past the Edge Function time limit (HTTP 546).
+    const postsByType = await Promise.all(
+      typeInfos.map(({ restBase }) => fetchAllPublishedPosts(siteUrl, username, appPassword, restBase)),
+    )
+
+    const rows: Record<string, unknown>[] = []
+    for (const posts of postsByType) {
       for (const post of posts) {
         if (isSitemapExcluded(post)) {
           skipped += 1
           continue
         }
         const parsed = parseWpPost(post, metaKeys)
-        const { error: upErr } = await service.from('asset_pages').upsert(
-          {
-            asset_id: assetId,
-            url_path: parsed.url_path,
-            canonical_url: parsed.canonical_url,
-            wp_post_id: parsed.wp_post_id,
-            wp_post_type: parsed.wp_post_type,
-            title: parsed.title,
-            scos_next_step: parsed.scos_next_step,
-            scos_index_status: parsed.scos_index_status,
-            topic_slug: parsed.topic_slug,
-            cluster_slug: parsed.cluster_slug,
-            wp_meta_snapshot: parsed.wp_meta_snapshot,
-            meta_synced_at: now,
-          },
-          { onConflict: 'asset_id,url_path' },
-        )
-        if (upErr) throw new Error(upErr.message)
-        upserted += 1
+        rows.push({
+          asset_id: assetId,
+          url_path: parsed.url_path,
+          canonical_url: parsed.canonical_url,
+          wp_post_id: parsed.wp_post_id,
+          wp_post_type: parsed.wp_post_type,
+          title: parsed.title,
+          scos_next_step: parsed.scos_next_step,
+          scos_index_status: parsed.scos_index_status,
+          topic_slug: parsed.topic_slug,
+          cluster_slug: parsed.cluster_slug,
+          wp_meta_snapshot: parsed.wp_meta_snapshot,
+          meta_synced_at: now,
+        })
       }
+    }
+
+    // Bulk upsert in chunks instead of one round-trip per row — the other big
+    // contributor to the timeout when syncing hundreds of pages across several types.
+    const CHUNK_SIZE = 200
+    for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+      const chunk = rows.slice(i, i + CHUNK_SIZE)
+      const { error: upErr } = await service
+        .from('asset_pages')
+        .upsert(chunk, { onConflict: 'asset_id,url_path' })
+      if (upErr) throw new Error(upErr.message)
+      upserted += chunk.length
     }
 
     await service
@@ -163,10 +176,7 @@ Deno.serve(async (req) => {
     assetIds = (conns ?? []).map((c) => c.asset_id)
   }
 
-  const results: SyncResult[] = []
-  for (const id of assetIds) {
-    results.push(await syncOneAsset(service, id))
-  }
+  const results = await Promise.all(assetIds.map((id) => syncOneAsset(service, id)))
 
   return jsonResponse({ results })
 })
